@@ -71,7 +71,7 @@
     "@jest/globals": "^27.5.1",
     "@smithy/types": "^4.14.4",
     "@types/aws-lambda": "^8.10.162",
-    "@types/config": "^3.3.5",
+    "@types/config": "^4.4.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.0.0",
     "@typescript-eslint/eslint-plugin": "^8.61.0",
