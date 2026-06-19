@@ -1,0 +1,28 @@
+{
+  "name": "minhoteca-fn-cognito-triggers",
+  "version": "1.0.0",
+  "description": "Função lambda para lidar com os gatilhos do Amazon Cognito, integrando a autenticação e autorização de usuários com a Minhoteca.",
+  "main": "dist/index.js",
+  "files": ["dist", "README.md", "LICENSE"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GustavoAdolfo/minhoteca-fn-cognito-triggers.git"
+  },
+  "keywords": ["Minhoteca", "biblioteca", "empréstimo", "livro", "livraria", "comunidade"],
+  "author": "gustavo.adolfo.as@gmail.com",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/GustavoAdolfo/minhoteca-fn-cognito-triggers/issues"
+  },
+  "homepage": "https://github.com/GustavoAdolfo/minhoteca-fn-cognito-triggers#readme",
+  "lint-staged": {
+    "*.{js,ts,json,md,yml,yaml}": ["prettier --write"],
+    "src/**/*.{ts,tsx}": ["eslint --max-warnings=0 --fix"]
+  },
+  "dependencies": {
+    "winston": "^3.19.0"
+  }
+}
