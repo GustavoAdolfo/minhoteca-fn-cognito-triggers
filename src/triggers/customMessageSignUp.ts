@@ -1,19 +1,9 @@
-import { SES } from '@aws-sdk/client-ses';
-import {
-  CognitoIdentityProviderClient,
-  AdminGetUserCommand,
-} from '@aws-sdk/client-cognito-identity-provider';
 import { NodeHttpHandler } from '@aws-sdk/node-http-handler';
 import { Agent } from 'http';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { CustomMessageTriggerEvent } from 'aws-lambda';
 import { Logger } from 'winston';
-
-const ses = new SES();
-const cognitoClient = new CognitoIdentityProviderClient({
-  region: process.env.AWS_REGION,
-});
 
 const getS3Client = () => {
   const config = {

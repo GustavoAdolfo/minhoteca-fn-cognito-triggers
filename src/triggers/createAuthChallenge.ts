@@ -4,9 +4,6 @@ import {
   AdminGetUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { randomUUID } from 'crypto';
-import { NodeHttpHandler } from '@aws-sdk/node-http-handler';
-import { Agent } from 'http';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { CreateAuthChallengeTriggerEvent } from 'aws-lambda';
 import { Logger } from 'winston';
 import { createPreSignedUrlLogo, getTemplateEmail } from './commom';

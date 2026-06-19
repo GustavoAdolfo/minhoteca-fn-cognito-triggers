@@ -3,10 +3,6 @@ import {
   CognitoIdentityProviderClient,
   AdminUpdateUserAttributesCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
-import { NodeHttpHandler } from '@aws-sdk/node-http-handler';
-import { Agent } from 'http';
-import { S3Client, GetObjectCommand, GetObjectCommandOutput } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PostConfirmationTriggerEvent } from 'aws-lambda';
 import { Logger } from 'winston';
 import { createPreSignedUrlLogo, getTemplateEmail } from './commom';
