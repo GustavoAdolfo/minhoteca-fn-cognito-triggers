@@ -1,0 +1,98 @@
+{
+  "name": "minhoteca-fn-cognito-triggers",
+  "version": "1.0.0",
+  "description": "Função lambda para lidar com os gatilhos do Amazon Cognito, integrando a autenticação e autorização de usuários com a Minhoteca.",
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc && tsc-alias && shx cp ./package.deploy.json dist/package.json && cd dist && npm install --omit=dev --no-package-lock",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:experimental": "NODE_OPTIONS='--experimental-vm-modules --trace-warnings' jest",
+    "test:experimental:coverage": "NODE_OPTIONS='--experimental-vm-modules --trace-warnings' jest --coverage",
+    "test:experimental:watch": "NODE_OPTIONS='--experimental-vm-modules --trace-warnings' jest --watch",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "lint:staged": "lint-staged",
+    "format": "prettier --write \"**/*.{js,ts,md,json,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{js,ts,md,json,yml,yaml}\"",
+    "postinstall": "husky install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GustavoAdolfo/minhoteca-fn-cognito-triggers.git"
+  },
+  "keywords": [
+    "Minhoteca",
+    "biblioteca",
+    "empréstimo",
+    "livro",
+    "livraria",
+    "comunidade"
+  ],
+  "author": "gustavo.adolfo.as@gmail.com",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/GustavoAdolfo/minhoteca-fn-cognito-triggers/issues"
+  },
+  "homepage": "https://github.com/GustavoAdolfo/minhoteca-fn-cognito-triggers#readme",
+  "lint-staged": {
+    "*.{js,ts,json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "src/**/*.{ts,tsx}": [
+      "eslint --max-warnings=0 --fix"
+    ]
+  },
+  "devDependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.1072.0",
+    "@aws-sdk/client-config-service": "^3.1068.0",
+    "@aws-sdk/client-dynamodb": "^3.1068.0",
+    "@aws-sdk/client-s3": "^3.1072.0",
+    "@aws-sdk/client-ses": "^3.1072.0",
+    "@aws-sdk/lib-dynamodb": "^3.1068.0",
+    "@aws-sdk/node-http-handler": "^3.370.0",
+    "@aws-sdk/s3-request-presigner": "^3.1072.0",
+    "@aws-sdk/util-dynamodb": "^3.996.4",
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
+    "@eslint/js": "^10.0.1",
+    "@gustavoadolfo/minhoteca-adapter-layer": "^0.1.6",
+    "@gustavoadolfo/minhoteca-casos-de-uso-layer": "^0.3.0",
+    "@gustavoadolfo/minhoteca-core-layer": "^1.0.15",
+    "@jest/globals": "^27.5.1",
+    "@smithy/types": "^4.14.4",
+    "@types/aws-lambda": "^8.10.162",
+    "@types/config": "^3.3.5",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.9.3",
+    "@typescript-eslint/eslint-plugin": "^8.61.0",
+    "@typescript-eslint/parser": "^8.61.0",
+    "aws-lambda": "^1.0.7",
+    "commitlint": "^21.0.2",
+    "dotenv": "^17.4.2",
+    "esbuild": "^0.28.1",
+    "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "husky": "^9.1.7",
+    "jest": "^30.4.2",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.4",
+    "shx": "^0.3.4",
+    "ts-jest": "^29.4.11",
+    "tsc-alias": "^1.8.10",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "winston": "^3.19.0"
+  }
+}
