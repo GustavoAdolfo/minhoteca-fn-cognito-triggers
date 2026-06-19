@@ -1,17 +1,5 @@
-// import { SES, SendEmailCommand } from '@aws-sdk/client-ses';
-// import { randomUUID } from 'crypto';
-// import { NodeHttpHandler } from '@aws-sdk/node-http-handler';
-// import { Agent } from 'http';
-// import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-// import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-
-import {
-  AdminGetUserCommand,
-  CognitoIdentityProviderClient,
-} from '@aws-sdk/client-cognito-identity-provider';
 import { createLogger, format, transports } from 'winston';
 import {
-  // customMessageSignUp,
   defineAuthChallenge,
   postConfirmation,
   preSignUp,
@@ -36,6 +24,7 @@ const logger = createLogger({
   transports: [new transports.Console()],
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const loggerInspect = (message: string, info: any) => {
   /* istanbul ignore next */
   if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
@@ -43,12 +32,7 @@ const loggerInspect = (message: string, info: any) => {
   }
 };
 
-// const ses = new SES();
-
-const cognitoClient = new CognitoIdentityProviderClient({
-  region: process.env.AWS_REGION,
-});
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
 export const handler = async (event: any, context: any, callback: any) => {
   loggerInspect('event', { event });
 

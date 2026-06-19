@@ -88,7 +88,10 @@ export async function createPreSignedUrlGet(
 //   return document;
 // }
 
-export async function getDataFromS3File(bucketName: string, keyFile: string) {
+export async function getDataFromS3File(
+  bucketName: string,
+  keyFile: string
+): Promise<unknown[] | Record<string, unknown> | string | number | boolean | null> {
   try {
     const config = optionsConfiguration(region, endpoint);
     const client = defineS3Client(config);
@@ -115,7 +118,10 @@ export async function getDataFromS3File(bucketName: string, keyFile: string) {
   }
 }
 
-export async function getTextFileFromS3File(bucketName: string, keyFile: string) {
+export async function getTextFileFromS3File(
+  bucketName: string,
+  keyFile: string
+): Promise<string | undefined> {
   try {
     const config = optionsConfiguration(region, endpoint);
     const client = defineS3Client(config);
