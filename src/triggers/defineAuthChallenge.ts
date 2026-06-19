@@ -20,8 +20,7 @@ const defineAuthChallenge = async (
       event.request.session.slice(-1)[0].challengeResult === false
     ) {
       // wrong OTP even After 3 sessions?
-      // eslint-disable-next-line no-console
-      console.log('wrong OTP even After 3 sessions?');
+      logger.error('wrong OTP even After 3 sessions?');
       event.response.issueTokens = false;
       event.response.failAuthentication = true;
       throw new Error('Invalid OTP');
@@ -30,8 +29,7 @@ const defineAuthChallenge = async (
       event.request.session.slice(-1)[0].challengeResult === true
     ) {
       // Correct OTP!
-      // eslint-disable-next-line no-console
-      console.log('CORRECT OTP');
+      logger.info('CORRECT OTP');
       if (event.request.session.slice(-1)[0].challengeName === 'SRP_A') {
         event.response.issueTokens = false;
         event.response.failAuthentication = false;
@@ -43,8 +41,7 @@ const defineAuthChallenge = async (
       }
     } else {
       // not yet received correct OTP
-      // eslint-disable-next-line no-console
-      console.log('not yet received correct OTP');
+      logger.info('not yet received correct OTP');
       event.response.issueTokens = false;
       event.response.failAuthentication = false;
       event.response.challengeName = 'CUSTOM_CHALLENGE';

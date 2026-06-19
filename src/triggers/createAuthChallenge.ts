@@ -107,7 +107,7 @@ const createAuthChallenge = async (
     // user.UserAttributes?.filter((item) => item.Name === "sub")[0]?.Value ??
     // "";
     // if(sub != event.request.UserAttributes.sub) {
-    //   console.log("Identificador inválido.");
+    //   logger.error("Identificador inválido.");
     //   return event;
     // }
 
