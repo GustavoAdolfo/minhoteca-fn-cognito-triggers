@@ -9,6 +9,7 @@ import {
   customEmailSender,
   verifyAuthChallenge,
   preTokenGeneration,
+  customMessageSignUp,
 } from './triggers';
 
 const { timestamp, label, combine } = format;
@@ -44,53 +45,29 @@ export const handler = async (event: any, context: any, callback: any) => {
     const triggerSource = event.triggerSource || event.trigger_source;
     switch (triggerSource) {
       case 'PreSignUp_SignUp':
-        try {
-          resultEvent = await preSignUp(event, logger);
-          loggerInspect('resultEvent preSignUp', { resultEvent });
-        } catch (error) {
-          logger.error('handler - preSignUp', { error });
-        }
-        break;
+        resultEvent = await preSignUp(event, logger);
+        loggerInspect('resultEvent preSignUp', { resultEvent });
+        return resultEvent;
       case 'CustomMessage_SignUp':
-        try {
-          // resultEvent = await customMessageSignUp(event, logger);
-          loggerInspect('resultEvent customMessageSignUp', { resultEvent });
-        } catch (error) {
-          logger.error('handler - customMessageSignUp', { error });
-        }
-        break;
+        resultEvent = await customMessageSignUp(event, logger);
+        loggerInspect('resultEvent customMessageSignUp', { resultEvent });
+        return resultEvent;
       case 'PostConfirmation_ConfirmSignUp':
-        try {
-          resultEvent = await postConfirmation(event, logger);
-          loggerInspect('resultEvent postConfirmation', { resultEvent });
-        } catch (error) {
-          logger.error('handler - postConfirmation', { error });
-        }
-        break;
+        resultEvent = await postConfirmation(event, logger);
+        loggerInspect('resultEvent postConfirmation', { resultEvent });
+        return resultEvent;
       case 'PreAuthentication_Authentication':
-        try {
-          resultEvent = await preAuthenticaton(event, logger);
-          loggerInspect('resultEvent preAuthenticaton', { resultEvent });
-        } catch (error) {
-          logger.error('handler - preAuthenticaton', { error });
-        }
-        break;
+        resultEvent = await preAuthenticaton(event, logger);
+        loggerInspect('resultEvent preAuthenticaton', { resultEvent });
+        return resultEvent;
       case 'PostAuthentication_Authentication':
-        try {
-          resultEvent = await postAuthentication(event, logger);
-          loggerInspect('resultEvent postAuthentication', { resultEvent });
-        } catch (error) {
-          logger.error('handler - postAuthentication', { error });
-        }
-        break;
+        resultEvent = await postAuthentication(event, logger);
+        loggerInspect('resultEvent postAuthentication', { resultEvent });
+        return resultEvent;
       case 'DefineAuthChallenge_Authentication':
-        try {
-          resultEvent = await defineAuthChallenge(event, logger);
-          loggerInspect('resultEvent defineAuthChallenge', { resultEvent });
-        } catch (error) {
-          logger.error('handler - defineAuthChallenge', { error });
-        }
-        break;
+        resultEvent = await defineAuthChallenge(event, logger);
+        loggerInspect('resultEvent defineAuthChallenge', { resultEvent });
+        return resultEvent;
       case 'CustomEmailSender_SignUp':
       case 'CustomEmailSender_ResendCode':
       case 'CustomEmailSender_ForgotPassword':
@@ -98,47 +75,28 @@ export const handler = async (event: any, context: any, callback: any) => {
       case 'CustomEmailSender_VerifyUserAttribute':
       case 'CustomEmailSender_AccountTakeOverNotification':
       case 'CustomEmailSender_AdminCreateUser':
-        try {
-          resultEvent = await customEmailSender(event, logger);
-          loggerInspect('resultEvent customEmailSender', { resultEvent });
-        } catch (error) {
-          logger.error('handler - customEmailSender', { error });
-        }
-        break;
+        resultEvent = await customEmailSender(event, logger);
+        loggerInspect('resultEvent customEmailSender', { resultEvent });
+        return resultEvent;
       case 'CreateAuthChallenge_Authentication':
-        try {
-          resultEvent = await createAuthChallenge(event, logger);
-          loggerInspect('resultEvent createAuthChallenge', { resultEvent });
-        } catch (error) {
-          logger.error('handler - createAuthChallenge', { error });
-        }
-        break;
+        resultEvent = await createAuthChallenge(event, logger);
+        loggerInspect('resultEvent createAuthChallenge', { resultEvent });
+        return resultEvent;
       case 'VerifyAuthChallengeResponse_Authentication':
-        try {
-          resultEvent = await verifyAuthChallenge(event, logger);
-          loggerInspect('resultEvent verifyAuthChallenge', { resultEvent });
-        } catch (error) {
-          logger.error('handler - verifyAuthChallenge', { error });
-        }
-        break;
+        resultEvent = await verifyAuthChallenge(event, logger);
+        loggerInspect('resultEvent verifyAuthChallenge', { resultEvent });
+        return resultEvent;
       case 'TokenGeneration_NewPasswordChallenge':
       case 'TokenGeneration_Authentication':
       case 'TokenGeneration_AuthenticateDevice':
       case 'TokenGeneration_RefreshTokens':
-        try {
-          resultEvent = await preTokenGeneration(event, logger);
-          loggerInspect('resultEvent preTokenGeneration', { resultEvent });
-        } catch (error) {
-          logger.error('handler - preTokenGeneration', { error });
-        }
-        break;
+        resultEvent = await preTokenGeneration(event, logger);
+        loggerInspect('resultEvent preTokenGeneration', { resultEvent });
+        return resultEvent;
       default:
         break;
     }
-
-    loggerInspect('result event', { resultEvent });
-
-    return resultEvent;
+    callback(null, resultEvent || event);
   } catch (error) {
     logger.error('handler', { error });
     callback(new Error(`Erro na execução do evento ${event.triggerSource ?? ''}`), event);

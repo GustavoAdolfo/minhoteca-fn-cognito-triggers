@@ -25,12 +25,14 @@ describe('createAuthChallenge', () => {
   it('creates a code, replaces placeholders and sends the email when the user has an email', async () => {
     const cognitoSendMock = jest.fn().mockResolvedValue({ Username: 'user-1' });
     const sesSendMock = jest.fn().mockResolvedValue({});
-    const createPreSignedUrlLogoMock = jest.fn().mockResolvedValue(
-      'https://logo.example.com/logo.png'
-    );
-    const getTemplateEmailMock = jest.fn().mockResolvedValue(
-      'Olá {{NOME_USUARIO}}! Seu código é {{CONFIRMATION_CODE}}. Logo: {{LOGO_URL}}. Sobre: {{LINK_SOBRE}}'
-    );
+    const createPreSignedUrlLogoMock = jest
+      .fn()
+      .mockResolvedValue('https://logo.example.com/logo.png');
+    const getTemplateEmailMock = jest
+      .fn()
+      .mockResolvedValue(
+        'Olá {{NOME_USUARIO}}! Seu código é {{CONFIRMATION_CODE}}. Logo: {{LOGO_URL}}. Sobre: {{LINK_SOBRE}}'
+      );
 
     jest.doMock('crypto', () => ({
       ...jest.requireActual('crypto'),
@@ -223,5 +225,122 @@ describe('createAuthChallenge', () => {
     expect(logger.error).toHaveBeenCalledWith('Error in createAuthChallenge', {
       error,
     });
+  });
+
+  it('covers debug and fallback branches while handling SES failures', async () => {
+    process.env.ENVIRONMENT = 'debug';
+    delete process.env.AWS_REGION;
+    delete process.env.TEMPLATE_EMAIL_LOGIN;
+    delete process.env.LINK_SOBRE;
+    delete process.env.LINK_POLITICA_DE_PRIVACIDADE;
+    delete process.env.LINK_TERMO_DE_USO;
+
+    const cognitoSendMock = jest.fn().mockResolvedValue({ Username: 'user-1' });
+    const sesSendMock = jest.fn().mockRejectedValue(new Error('ses failure'));
+    const createPreSignedUrlLogoMock = jest.fn().mockResolvedValue(null);
+    const getTemplateEmailMock = jest
+      .fn()
+      .mockResolvedValue(
+        '{{NOME_USUARIO}}|{{LOGO_URL}}|{{LINK_SOBRE}}|{{LINK_POLITICA_DE_PRIVACIDADE}}|{{LINK_TERMO_DE_USO}}|{{CONFIRMATION_CODE}}'
+      );
+
+    jest.doMock('crypto', () => ({
+      ...jest.requireActual('crypto'),
+      randomUUID: jest.fn(() => '1234567890abcdef'),
+    }));
+    jest.doMock('@aws-sdk/client-ses', () => ({
+      SES: jest.fn().mockImplementation(() => ({ send: sesSendMock })),
+      SendEmailCommand: jest.fn().mockImplementation((params) => params),
+    }));
+    jest.doMock('@aws-sdk/client-cognito-identity-provider', () => ({
+      CognitoIdentityProviderClient: jest.fn().mockImplementation(() => ({
+        send: cognitoSendMock,
+      })),
+      AdminGetUserCommand: jest.fn().mockImplementation((params) => params),
+    }));
+    jest.doMock('../../src/triggers/commom', () => ({
+      createPreSignedUrlLogo: createPreSignedUrlLogoMock,
+      getTemplateEmail: getTemplateEmailMock,
+    }));
+
+    const { createAuthChallenge } = loadModule();
+    const logger = { info: jest.fn(), error: jest.fn() };
+
+    const event = {
+      userPoolId: 'pool-id',
+      userName: 'user-1',
+      request: {
+        userAttributes: {
+          email: 'user@example.com',
+        },
+      },
+      response: {},
+    };
+
+    const result = await createAuthChallenge(event, logger);
+
+    expect(result.response.privateChallengeParameters).toEqual({ code: '123456' });
+    expect(getTemplateEmailMock).toHaveBeenCalledWith('', logger);
+    expect(logger.info).toHaveBeenCalledWith('Starting createAuthChallenge...');
+    expect(logger.info).toHaveBeenCalledWith('code', { code: '123456' });
+    expect(sesSendMock).toHaveBeenCalledTimes(1);
+    expect(logger.error).toHaveBeenCalledWith('sedEmail', {
+      error: expect.any(Error),
+    });
+
+    const params = sesSendMock.mock.calls[0][0];
+    expect(params.Message?.Body?.Text?.Data).toBe('user|#|#|#|#|123456');
+    expect(params.Message?.Body?.Html?.Data).toBe('user|#|#|#|#|123456');
+  });
+
+  it('sends email even when template content is undefined', async () => {
+    const cognitoSendMock = jest.fn().mockResolvedValue({ Username: 'user-1' });
+    const sesSendMock = jest.fn().mockResolvedValue({});
+    const createPreSignedUrlLogoMock = jest
+      .fn()
+      .mockResolvedValue('https://logo.example.com/logo.png');
+    const getTemplateEmailMock = jest.fn().mockResolvedValue(undefined);
+
+    jest.doMock('crypto', () => ({
+      ...jest.requireActual('crypto'),
+      randomUUID: jest.fn(() => '1234567890abcdef'),
+    }));
+    jest.doMock('@aws-sdk/client-ses', () => ({
+      SES: jest.fn().mockImplementation(() => ({ send: sesSendMock })),
+      SendEmailCommand: jest.fn().mockImplementation((params) => params),
+    }));
+    jest.doMock('@aws-sdk/client-cognito-identity-provider', () => ({
+      CognitoIdentityProviderClient: jest.fn().mockImplementation(() => ({
+        send: cognitoSendMock,
+      })),
+      AdminGetUserCommand: jest.fn().mockImplementation((params) => params),
+    }));
+    jest.doMock('../../src/triggers/commom', () => ({
+      createPreSignedUrlLogo: createPreSignedUrlLogoMock,
+      getTemplateEmail: getTemplateEmailMock,
+    }));
+
+    const { createAuthChallenge } = loadModule();
+    const logger = { info: jest.fn(), error: jest.fn() };
+
+    const event = {
+      userPoolId: 'pool-id',
+      userName: 'user-1',
+      request: {
+        userAttributes: {
+          email: 'user@example.com',
+        },
+      },
+      response: {},
+    };
+
+    const result = await createAuthChallenge(event, logger);
+
+    expect(result.response.privateChallengeParameters).toEqual({ code: '123456' });
+    expect(getTemplateEmailMock).toHaveBeenCalledWith('welcome-template', logger);
+    expect(sesSendMock).toHaveBeenCalledTimes(1);
+    const params = sesSendMock.mock.calls[0][0];
+    expect(params.Message?.Body?.Text?.Data).toBeUndefined();
+    expect(params.Message?.Body?.Html?.Data).toBeUndefined();
   });
 });

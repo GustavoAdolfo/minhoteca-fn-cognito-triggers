@@ -3,7 +3,12 @@ import { jest } from '@jest/globals';
 describe('postConfirmation', () => {
   const originalEnv = process.env;
 
-  const setupModule = (options?: { sesReject?: unknown; cognitoReject?: unknown }) => {
+  const setupModule = (options?: {
+    sesReject?: unknown;
+    cognitoReject?: unknown;
+    logoUrlValue?: string | null | undefined;
+    templateBody?: string | undefined;
+  }) => {
     jest.resetModules();
 
     const sesSendMock = options?.sesReject
@@ -14,14 +19,24 @@ describe('postConfirmation', () => {
       ? jest.fn().mockRejectedValue(options.cognitoReject)
       : jest.fn().mockResolvedValue({ ok: true });
 
+    const hasCustomLogoUrl = Object.prototype.hasOwnProperty.call(options ?? {}, 'logoUrlValue');
+    const hasCustomTemplateBody = Object.prototype.hasOwnProperty.call(
+      options ?? {},
+      'templateBody'
+    );
+
     const createPreSignedUrlLogoMock = jest
       .fn()
-      .mockResolvedValue('https://assets.example.com/logo.png');
+      .mockResolvedValue(
+        hasCustomLogoUrl ? options?.logoUrlValue : 'https://assets.example.com/logo.png'
+      );
 
     const getTemplateEmailMock = jest
       .fn()
       .mockResolvedValue(
-        'Olá {{NOME_USUARIO}}, logo {{LOGO_URL}}, sobre {{LINK_SOBRE}}, priv {{LINK_POLITICA_DE_PRIVACIDADE}}, termo {{LINK_TERMO_DE_USO}}'
+        hasCustomTemplateBody
+          ? options?.templateBody
+          : 'Olá {{NOME_USUARIO}}, logo {{LOGO_URL}}, sobre {{LINK_SOBRE}}, priv {{LINK_POLITICA_DE_PRIVACIDADE}}, termo {{LINK_TERMO_DE_USO}}'
       );
 
     jest.doMock('@aws-sdk/client-ses', () => ({
@@ -206,5 +221,83 @@ describe('postConfirmation', () => {
     expect(logger.error).toHaveBeenCalledWith('Error in postConfirmation', {
       error: cognitoError,
     });
+  });
+
+  it('covers debug mode and env fallback branches in sendEmail and Cognito attributes', async () => {
+    process.env.ENVIRONMENT = 'debug';
+    delete process.env.TEMPLATE_EMAIL_CONFIRMATION;
+    delete process.env.LINK_SOBRE;
+    delete process.env.LINK_POLITICA_DE_PRIVACIDADE;
+    delete process.env.LINK_TERMO_DE_USO;
+    delete process.env.ACKNOWLEDGMENT_FILE_PATH;
+
+    const { postConfirmation, mocks } = setupModule({
+      logoUrlValue: undefined,
+      templateBody:
+        'Olá {{NOME_USUARIO}}, logo {{LOGO_URL}}, sobre {{LINK_SOBRE}}, priv {{LINK_POLITICA_DE_PRIVACIDADE}}, termo {{LINK_TERMO_DE_USO}}',
+    });
+    const logger = { info: jest.fn(), error: jest.fn() };
+
+    const event = {
+      userPoolId: 'pool-id',
+      userName: 'username-1',
+      request: {
+        userAttributes: {
+          email: 'usuario@exemplo.com',
+        },
+      },
+      response: {},
+    };
+
+    const result = await postConfirmation(event, logger);
+
+    expect(result).toBe(event);
+    expect(logger.info).toHaveBeenCalledWith('Starting postConfirmation...');
+    expect(mocks.getTemplateEmailMock).toHaveBeenCalledWith('', logger);
+
+    const emailCommand = mocks.sesSendMock.mock.calls[0][0];
+    const textData = emailCommand.input?.Message?.Body?.Text?.Data;
+    expect(textData).toContain('logo #');
+    expect(textData).toContain('sobre #');
+    expect(textData).toContain('priv #');
+    expect(textData).toContain('termo #');
+
+    const cognitoCommand = mocks.cognitoSendMock.mock.calls[0][0];
+    const attrs = cognitoCommand.input?.UserAttributes;
+    expect(attrs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          Name: 'custom:acknowledgement_term',
+          Value: '',
+        }),
+      ])
+    );
+  });
+
+  it('sends email with undefined body when template is undefined', async () => {
+    const { postConfirmation, mocks } = setupModule({
+      templateBody: undefined,
+    });
+    const logger = { info: jest.fn(), error: jest.fn() };
+
+    const event = {
+      userPoolId: 'pool-id',
+      userName: 'username-1',
+      request: {
+        userAttributes: {
+          email: 'usuario@exemplo.com',
+        },
+      },
+      response: {},
+    };
+
+    const result = await postConfirmation(event, logger);
+
+    expect(result).toBe(event);
+    expect(mocks.sesSendMock).toHaveBeenCalledTimes(1);
+    const emailCommand = mocks.sesSendMock.mock.calls[0][0];
+    expect(emailCommand.input?.Message?.Body?.Text?.Data).toBeUndefined();
+    expect(emailCommand.input?.Message?.Body?.Html?.Data).toBeUndefined();
+    expect(logger.error).not.toHaveBeenCalled();
   });
 });

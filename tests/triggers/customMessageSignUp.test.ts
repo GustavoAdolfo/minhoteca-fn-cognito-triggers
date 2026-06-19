@@ -5,33 +5,52 @@ describe('customMessageSignUp', () => {
 
   const setupModule = (options?: {
     signedUrlReject?: unknown;
+    signedUrlValue?: string | undefined;
     s3SendReject?: unknown;
     templateBody?: string;
+    responseWithoutBody?: boolean;
   }) => {
     jest.resetModules();
 
     const s3SendMock = options?.s3SendReject
       ? jest.fn().mockRejectedValue(options.s3SendReject)
-      : jest.fn().mockResolvedValue({
-          Body: {
-            transformToString: jest
-              .fn()
-              .mockResolvedValue(
-                options?.templateBody ??
-                  'Olá {{NOME_USUARIO}}, logo {{LOGO_URL}}, sobre {{LINK_SOBRE}}, privacidade {{LINK_POLITICA_DE_PRIVACIDADE}}, termo {{LINK_TERMO_DE_USO}}'
-              ),
-          },
-        });
+      : options?.responseWithoutBody
+        ? jest.fn().mockResolvedValue({ Body: undefined })
+        : jest.fn().mockResolvedValue({
+            Body: {
+              transformToString: jest
+                .fn()
+                .mockResolvedValue(
+                  options?.templateBody ??
+                    'Olá {{NOME_USUARIO}}, logo {{LOGO_URL}}, sobre {{LINK_SOBRE}}, privacidade {{LINK_POLITICA_DE_PRIVACIDADE}}, termo {{LINK_TERMO_DE_USO}}'
+                ),
+            },
+          });
+
+    const s3ClientCtorMock = jest.fn().mockImplementation(() => ({
+      send: s3SendMock,
+    }));
+
+    const getObjectCommandMock = jest.fn().mockImplementation((input) => ({ input }));
+
+    const hasCustomSignedUrlValue = Object.prototype.hasOwnProperty.call(
+      options ?? {},
+      'signedUrlValue'
+    );
 
     const getSignedUrlMock = options?.signedUrlReject
       ? jest.fn().mockRejectedValue(options.signedUrlReject)
-      : jest.fn().mockResolvedValue('https://assets.example.com/logo.png');
+      : jest
+          .fn()
+          .mockResolvedValue(
+            hasCustomSignedUrlValue
+              ? options?.signedUrlValue
+              : 'https://assets.example.com/logo.png'
+          );
 
     jest.doMock('@aws-sdk/client-s3', () => ({
-      S3Client: jest.fn().mockImplementation(() => ({
-        send: s3SendMock,
-      })),
-      GetObjectCommand: jest.fn().mockImplementation((input) => ({ input })),
+      S3Client: s3ClientCtorMock,
+      GetObjectCommand: getObjectCommandMock,
     }));
 
     jest.doMock('@aws-sdk/s3-request-presigner', () => ({
@@ -55,6 +74,8 @@ describe('customMessageSignUp', () => {
       mocks: {
         s3SendMock,
         getSignedUrlMock,
+        getObjectCommandMock,
+        s3ClientCtorMock,
       },
     };
   };
@@ -183,5 +204,90 @@ describe('customMessageSignUp', () => {
     expect(logger.error).toHaveBeenCalledWith('Error in customMessage', {
       error: s3Error,
     });
+  });
+
+  it('covers debug logs and env fallbacks when optional values are missing', async () => {
+    process.env.ENVIRONMENT = 'debug';
+    delete process.env.AWS_REGION;
+    delete process.env.BUCKET_RESOURCES;
+    delete process.env.LOGO_IMG;
+    delete process.env.LOGO_CONTENT_TYPE;
+    delete process.env.BUCKET_TEMPLATES;
+    delete process.env.TEMPLATE_EMAIL;
+    delete process.env.LINK_SOBRE;
+    delete process.env.LINK_POLITICA_DE_PRIVACIDADE;
+    delete process.env.LINK_TERMO_DE_USO;
+
+    const { customMessageSignUp, mocks } = setupModule({
+      signedUrlValue: undefined,
+      templateBody:
+        'Olá {{NOME_USUARIO}}, logo {{LOGO_URL}}, sobre {{LINK_SOBRE}}, privacidade {{LINK_POLITICA_DE_PRIVACIDADE}}, termo {{LINK_TERMO_DE_USO}}',
+    });
+    const logger = { info: jest.fn(), error: jest.fn() };
+
+    const event = {
+      triggerSource: 'CustomMessage_SignUp',
+      request: {
+        userAttributes: {
+          email: 'usuario@exemplo.com',
+        },
+      },
+      response: {},
+    };
+
+    const result = await customMessageSignUp(event, logger);
+
+    expect(result).toBe(event);
+    expect(result.response.emailMessage).toContain('Olá usuario');
+    expect(result.response.emailMessage).toContain('logo #');
+    expect(result.response.emailMessage).toContain('sobre #');
+    expect(result.response.emailMessage).toContain('privacidade #');
+    expect(result.response.emailMessage).toContain('termo #');
+    expect(logger.info).toHaveBeenCalledWith('createPreSignedUrlLogo', { url: undefined });
+    expect(mocks.s3ClientCtorMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        region: 'us-east-1',
+        maxAttempts: 5,
+      })
+    );
+    expect(mocks.getObjectCommandMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        Bucket: '',
+        Key: '',
+        ResponseContentType: '',
+      })
+    );
+    expect(mocks.getObjectCommandMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        Bucket: '',
+        Key: '',
+      })
+    );
+  });
+
+  it('returns an empty message when template body is missing in S3 response', async () => {
+    const { customMessageSignUp } = setupModule({
+      responseWithoutBody: true,
+    });
+    const logger = { info: jest.fn(), error: jest.fn() };
+
+    const event = {
+      triggerSource: 'CustomMessage_SignUp',
+      request: {
+        userAttributes: {
+          email: 'usuario@exemplo.com',
+        },
+      },
+      response: {},
+    };
+
+    const result = await customMessageSignUp(event, logger);
+
+    expect(result).toBe(event);
+    expect(result.response.emailMessage).toBe('');
+    expect(result.response.emailSubject).toBe('Confirme sua conta na Minhoteca');
+    expect(logger.error).not.toHaveBeenCalled();
   });
 });

@@ -207,4 +207,63 @@ describe('postAuthentication', () => {
     expect(password).toBeDefined();
     expect(password.length).toBeGreaterThanOrEqual(8);
   });
+
+  it('covers password fallback branches when random index is out of bounds', async () => {
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(1);
+    const { postAuthentication, mocks } = setupModule();
+    const logger = { info: jest.fn(), error: jest.fn() };
+
+    const event = {
+      userPoolId: 'pool-id',
+      userName: 'new-user',
+      request: {
+        userAttributes: {
+          email: 'newuser@exemplo.com',
+          'custom:newUser': 'true',
+        },
+      },
+      response: {},
+    };
+
+    await postAuthentication(event, logger);
+
+    const callArgs = mocks.cognitoSendMock.mock.calls[0][0];
+    const password = callArgs.input.Password as string;
+
+    expect(password).toBeDefined();
+    expect(password.length).toBeGreaterThanOrEqual(8);
+
+    randomSpy.mockRestore();
+  });
+
+  it('covers remaining fallback branches in password generation with controlled randomness', async () => {
+    const randomValues = [2, 0, 2, 0, 2, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0];
+    const randomSpy = jest
+      .spyOn(Math, 'random')
+      .mockImplementation(() => randomValues.shift() ?? 0);
+    const { postAuthentication, mocks } = setupModule();
+    const logger = { info: jest.fn(), error: jest.fn() };
+
+    const event = {
+      userPoolId: 'pool-id',
+      userName: 'new-user',
+      request: {
+        userAttributes: {
+          email: 'newuser@exemplo.com',
+          'custom:newUser': 'true',
+        },
+      },
+      response: {},
+    };
+
+    await postAuthentication(event, logger);
+
+    const callArgs = mocks.cognitoSendMock.mock.calls[0][0];
+    const password = callArgs.input.Password as string;
+
+    expect(password).toBeDefined();
+    expect(password.length).toBeGreaterThanOrEqual(8);
+
+    randomSpy.mockRestore();
+  });
 });

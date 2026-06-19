@@ -8,7 +8,6 @@ describe('defineAuthChallenge', () => {
   };
 
   const originalEnv = process.env;
-  const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -18,7 +17,6 @@ describe('defineAuthChallenge', () => {
 
   afterAll(() => {
     process.env = originalEnv;
-    consoleLogSpy.mockRestore();
   });
 
   const createEvent = (
@@ -59,7 +57,7 @@ describe('defineAuthChallenge', () => {
 
     expect(event.response.issueTokens).toBe(false);
     expect(event.response.failAuthentication).toBe(true);
-    expect(consoleLogSpy).toHaveBeenCalledWith('wrong OTP even After 3 sessions?');
+    expect(logger.error).toHaveBeenCalledWith('wrong OTP even After 3 sessions?');
     expect(logger.error).toHaveBeenCalledWith('Error in defineAuthChallenge', {
       error: expect.any(Error),
     });
@@ -73,7 +71,7 @@ describe('defineAuthChallenge', () => {
     expect(result.response.issueTokens).toBe(false);
     expect(result.response.failAuthentication).toBe(false);
     expect(result.response.challengeName).toBe('CUSTOM_CHALLENGE');
-    expect(consoleLogSpy).toHaveBeenCalledWith('CORRECT OTP');
+    expect(logger.info).toHaveBeenCalledWith('CORRECT OTP');
     expect(logger.error).not.toHaveBeenCalled();
   });
 
@@ -87,7 +85,7 @@ describe('defineAuthChallenge', () => {
     expect(result.response.issueTokens).toBe(true);
     expect(result.response.failAuthentication).toBe(false);
     expect(result.response.challengeName).toBe('CUSTOM_CHALLENGE');
-    expect(consoleLogSpy).toHaveBeenCalledWith('CORRECT OTP');
+    expect(logger.info).toHaveBeenCalledWith('CORRECT OTP');
     expect(logger.error).not.toHaveBeenCalled();
   });
 
@@ -99,7 +97,7 @@ describe('defineAuthChallenge', () => {
     expect(result.response.issueTokens).toBe(false);
     expect(result.response.failAuthentication).toBe(false);
     expect(result.response.challengeName).toBe('CUSTOM_CHALLENGE');
-    expect(consoleLogSpy).toHaveBeenCalledWith('not yet received correct OTP');
+    expect(logger.info).toHaveBeenCalledWith('not yet received correct OTP');
     expect(logger.error).not.toHaveBeenCalled();
   });
 
@@ -111,7 +109,7 @@ describe('defineAuthChallenge', () => {
     expect(result.response.issueTokens).toBe(false);
     expect(result.response.failAuthentication).toBe(false);
     expect(result.response.challengeName).toBe('CUSTOM_CHALLENGE');
-    expect(consoleLogSpy).toHaveBeenCalledWith('not yet received correct OTP');
+    expect(logger.info).toHaveBeenCalledWith('not yet received correct OTP');
     expect(logger.error).not.toHaveBeenCalled();
   });
 });

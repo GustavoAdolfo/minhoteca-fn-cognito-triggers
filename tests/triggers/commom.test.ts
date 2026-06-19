@@ -30,17 +30,13 @@ describe('createPreSignedUrlLogo', () => {
     const result = await createPreSignedUrlLogo(logger as never);
 
     expect(result).toBe('https://signed-logo-url');
-    expect(createPreSignedUrlSpy).toHaveBeenCalledWith(
-      'bucket-resources',
-      'logo.png',
-      'image/png'
-    );
+    expect(createPreSignedUrlSpy).toHaveBeenCalledWith('bucket-resources', 'logo.png', 'image/png');
   });
 
   it('logs and rethrows if generating the logo URL fails', async () => {
     process.env.BUCKET_RESOURCES = 'bucket-resources';
-    process.env.LOGO_IMG = 'logo.png';
-    process.env.LOGO_CONTENT_TYPE = 'image/png';
+    delete process.env.LOGO_IMG;
+    delete process.env.LOGO_CONTENT_TYPE;
 
     const error = new Error('boom');
     jest.spyOn(s3Proxy, 'createPreSignedUrlGet').mockRejectedValue(error);
@@ -49,6 +45,21 @@ describe('createPreSignedUrlLogo', () => {
     expect(logger.error).toHaveBeenCalledWith('Error in createPreSignedUrlLogo', {
       error,
     });
+  });
+
+  it('uses empty defaults when logo environment values are missing', async () => {
+    delete process.env.BUCKET_RESOURCES;
+    delete process.env.LOGO_IMG;
+    delete process.env.LOGO_CONTENT_TYPE;
+
+    const createPreSignedUrlSpy = jest
+      .spyOn(s3Proxy, 'createPreSignedUrlGet')
+      .mockResolvedValue('https://signed-logo-url-defaults');
+
+    const result = await createPreSignedUrlLogo(logger as never);
+
+    expect(result).toBe('https://signed-logo-url-defaults');
+    expect(createPreSignedUrlSpy).toHaveBeenCalledWith('', '', '');
   });
 });
 
@@ -78,10 +89,7 @@ describe('getTemplateEmail', () => {
     const result = await getTemplateEmail('welcome.html', logger as never);
 
     expect(result).toBe('template-body');
-    expect(getTextFileFromS3FileSpy).toHaveBeenCalledWith(
-      'bucket-templates',
-      'welcome.html'
-    );
+    expect(getTextFileFromS3FileSpy).toHaveBeenCalledWith('bucket-templates', 'welcome.html');
   });
 
   it('returns undefined when the template content is empty', async () => {
@@ -106,5 +114,18 @@ describe('getTemplateEmail', () => {
     expect(logger.error).toHaveBeenCalledWith('Error in getTemplateEmail', {
       error,
     });
+  });
+
+  it('uses an empty bucket name when BUCKET_TEMPLATES is missing', async () => {
+    delete process.env.BUCKET_TEMPLATES;
+
+    const getTextFileFromS3FileSpy = jest
+      .spyOn(s3Proxy, 'getTextFileFromS3File')
+      .mockResolvedValue('template-body-default-bucket');
+
+    const result = await getTemplateEmail('welcome.html', logger as never);
+
+    expect(result).toBe('template-body-default-bucket');
+    expect(getTextFileFromS3FileSpy).toHaveBeenCalledWith('', 'welcome.html');
   });
 });
