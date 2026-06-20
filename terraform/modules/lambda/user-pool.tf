@@ -1,5 +1,5 @@
 resource "aws_cognito_user_pool" "existing" {
-  name = var.user_pool_id
+  name = var.user_pool_name
 
   lambda_config {
     define_auth_challenge          = aws_lambda_function.cognitoTriggers.arn # (Optional) Defines the authentication challenge.

@@ -16,8 +16,6 @@ jobs:
 
     permissions:
       contents: write
-      packages: write
-      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -36,8 +34,6 @@ jobs:
         with:
           node-version: '24.x'
           cache: 'npm'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@gustavoadolfo'
 
       - name: Install dependencies
         run: npm ci
@@ -89,35 +85,7 @@ jobs:
             done
           fi
 
-      - name: Publish to GitHub Packages
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Push version bump
         run: |
           git push origin main
           git push origin ${{ steps.version.outputs.tag_name }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag_name }}
-          name: Release ${{ steps.version.outputs.tag_name }}
-          generate_release_notes: true
-          body: |
-            Changes in this Release
-            - See CHANGELOG.md for detailed information
-
-      - name: Sync develop with main
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PR_EXISTS=$(gh pr list --base develop --head main --state open --json number -q 'length')
-
-          if [ "$PR_EXISTS" -eq "0" ]; then
-            gh pr create --base develop --head main --title "🔄 chore: Sincronizar \`develop\` com \`main\` após release" --body "Sincronização automática pós-release para garantir que a \`develop\` esteja atualizada com a versão (e possível changelog) recém-publicada na \`main\`."
-          else
-            echo "Já existe um PR aberto para sincronizar a main com a develop."
-          fi
