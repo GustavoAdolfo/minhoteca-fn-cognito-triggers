@@ -100,7 +100,21 @@ jobs:
               PR_EXISTS=$(gh pr list --base main --head develop --state open --json number -q 'length')
 
               if [ "$PR_EXISTS" -eq "0" ]; then
-                gh pr create --base main --head develop --title "🚀 Release: Atualização da \`main\` a partir da \`develop\`" --body "Este Pull Request foi aberto automaticamente após os testes passarem com sucesso na branch \`develop\`.\n\n**Versão detectada em develop:** \`$DEV_VERSION\`\n**Versão atual em main:** \`$MAIN_VERSION\`\n\nRevise as alterações e aprove para promover para produção."
+                PR_CREATE_OUTPUT=$(gh pr create --base main --head develop --title "🚀 Release: Atualização da \`main\` a partir da \`develop\`" --body "Este Pull Request foi aberto automaticamente após os testes passarem com sucesso na branch \`develop\`.\n\n**Versão detectada em develop:** \`$DEV_VERSION\`\n**Versão atual em main:** \`$MAIN_VERSION\`\n\nRevise as alterações e aprove para promover para produção." 2>&1) || {
+                  echo "$PR_CREATE_OUTPUT"
+
+                  if echo "$PR_CREATE_OUTPUT" | grep -qi "not permitted to create or approve pull requests"; then
+                    echo "Criação automática de PR bloqueada para o GITHUB_TOKEN."
+                    echo "Soluções:"
+                    echo "1) Habilite em Settings > Actions > General > Workflow permissions: 'Allow GitHub Actions to create and approve pull requests'."
+                    echo "2) Ou rode essa criação de PR com um token pessoal (PAT) em uma etapa separada do pipeline."
+                    exit 0
+                  fi
+
+                  exit 1
+                }
+
+                echo "$PR_CREATE_OUTPUT"
               else
                 echo "Já existe um Pull Request aberto de develop para main. Nenhuma ação adicional necessária."
               fi
@@ -163,11 +177,35 @@ jobs:
         working-directory: terraform/envs/prod
         env:
           TF_VAR_appregistry_id: ${{ vars.APPREGISTRY_ID || secrets.APPREGISTRY_ID }}
+          TF_VAR_user_pool_id: ${{ steps.target.outputs.user_pool_id }}
+          TF_VAR_user_pool_client_id: ${{ vars.USER_POOL_CLIENT_ID || secrets.USER_POOL_CLIENT_ID }}
+          TF_VAR_bucket_arquivos: ${{ VARS.BUCKET_ARQUIVOS || SECRETS.BUCKET_ARQUIVOS }}
+          TF_VAR_bucket_templates: ${{ vars.BUCKET_TEMPLATES || secrets.BUCKET_TEMPLATES }}
+          TF_VAR_logo_content_type: ${{ vars.LOGO_CONTENT_TYPE || secrets.LOGO_CONTENT_TYPE }}
+          TF_VAR_logo_img: ${{ vars.LOGO_IMG || secrets.LOGO_IMG }}
+          TF_VAR_template_email_confirmation: ${{ vars.TEMPLATE_EMAIL_CONFIRMATION || secrets.TEMPLATE_EMAIL_CONFIRMATION }}
+          TF_VAR_template_email_login: ${{ vars.TEMPLATE_EMAIL_LOGIN || secrets.TEMPLATE_EMAIL_LOGIN }}
+          TF_VAR_template_email_signup: ${{ vars.TEMPLATE_EMAIL_SIGNUP || secrets.TEMPLATE_EMAIL_SIGNUP }}
+          TF_VAR_email_about_link: ${{ vars.EMAIL_ABOUT_LINK || secrets.EMAIL_ABOUT_LINK }}
+          TF_VAR_email_privacy_policy_link: ${{ vars.EMAIL_PRIVACY_POLICY_LINK || secrets.EMAIL_PRIVACY_POLICY_LINK }}
+          TF_VAR_email_use_term: ${{ vars.EMAIL_USE_TERM || secrets.EMAIL_USE_TERM }}
         run: terraform plan -out=tfplan
 
       - name: Terraform Apply
         working-directory: terraform/envs/prod
         env:
           TF_VAR_appregistry_id: ${{ vars.APPREGISTRY_ID || secrets.APPREGISTRY_ID }}
+          TF_VAR_user_pool_id: ${{ steps.target.outputs.user_pool_id }}
+          TF_VAR_user_pool_client_id: ${{ vars.USER_POOL_CLIENT_ID || secrets.USER_POOL_CLIENT_ID }}
+          TF_VAR_bucket_arquivos: ${{ VARS.BUCKET_ARQUIVOS || SECRETS.BUCKET_ARQUIVOS }}
+          TF_VAR_bucket_templates: ${{ vars.BUCKET_TEMPLATES || secrets.BUCKET_TEMPLATES }}
+          TF_VAR_logo_content_type: ${{ vars.LOGO_CONTENT_TYPE || secrets.LOGO_CONTENT_TYPE }}
+          TF_VAR_logo_img: ${{ vars.LOGO_IMG || secrets.LOGO_IMG }}
+          TF_VAR_template_email_confirmation: ${{ vars.TEMPLATE_EMAIL_CONFIRMATION || secrets.TEMPLATE_EMAIL_CONFIRMATION }}
+          TF_VAR_template_email_login: ${{ vars.TEMPLATE_EMAIL_LOGIN || secrets.TEMPLATE_EMAIL_LOGIN }}
+          TF_VAR_template_email_signup: ${{ vars.TEMPLATE_EMAIL_SIGNUP || secrets.TEMPLATE_EMAIL_SIGNUP }}
+          TF_VAR_email_about_link: ${{ vars.EMAIL_ABOUT_LINK || secrets.EMAIL_ABOUT_LINK }}
+          TF_VAR_email_privacy_policy_link: ${{ vars.EMAIL_PRIVACY_POLICY_LINK || secrets.EMAIL_PRIVACY_POLICY_LINK }}
+          TF_VAR_email_use_term: ${{ vars.EMAIL_USE_TERM || secrets.EMAIL_USE_TERM }}
         # O auto-approve é essencial em ambientes de CI/CD pois não há interação humana
         run: terraform apply -auto-approve tfplan
