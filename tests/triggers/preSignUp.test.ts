@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 
 describe('preSignUp', () => {
+  const requestId = 'request-id';
   const originalEnv = process.env;
 
   const setupModule = (options?: {
@@ -65,7 +66,7 @@ describe('preSignUp', () => {
       response: {},
     };
 
-    const result = await preSignUp(event, logger);
+    const result = await preSignUp(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.listUsersCommandMock).toHaveBeenCalledWith({
@@ -80,7 +81,7 @@ describe('preSignUp', () => {
     expect(logger.error).not.toHaveBeenCalled();
   });
 
-  it('logs duplicate user case and keeps flow returning event', async () => {
+  it('logs duplicate user case and throws', async () => {
     const users = [{ Username: 'existing-user' }];
     const { preSignUp, mocks } = setupModule({ users });
     const logger = {
@@ -98,18 +99,19 @@ describe('preSignUp', () => {
       response: {},
     };
 
-    const result = await preSignUp(event, logger);
+    await expect(preSignUp(event, requestId, logger)).rejects.toThrow('E-mail já cadastrado');
 
-    expect(result).toBe(event);
     expect(mocks.sendMock).toHaveBeenCalledTimes(1);
-    expect(logger.info).toHaveBeenCalledWith('Usuário já existe', { user: users });
-    expect(logger.error).toHaveBeenCalledWith('Error in preSignUp', {
-      error: expect.any(Error),
-    });
-    expect(result.response.autoConfirmUser).toBeUndefined();
+    expect(logger.info).toHaveBeenCalledWith(
+      'Usuário já existe',
+      { requestId, triggerSource: undefined, user: users },
+      { event }
+    );
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(event.response.autoConfirmUser).toBeUndefined();
   });
 
-  it('logs error when Cognito list users call fails and returns event', async () => {
+  it('rethrows when Cognito list users call fails', async () => {
     const sendError = new Error('cognito-list-failure');
     const { preSignUp, mocks } = setupModule({ sendReject: sendError });
     const logger = {
@@ -127,13 +129,10 @@ describe('preSignUp', () => {
       response: {},
     };
 
-    const result = await preSignUp(event, logger);
+    await expect(preSignUp(event, requestId, logger)).rejects.toThrow('cognito-list-failure');
 
-    expect(result).toBe(event);
     expect(mocks.sendMock).toHaveBeenCalledTimes(1);
-    expect(logger.error).toHaveBeenCalledWith('Error in preSignUp', {
-      error: sendError,
-    });
+    expect(logger.error).not.toHaveBeenCalled();
   });
 
   it('logs start message in debug environment', async () => {
@@ -155,8 +154,17 @@ describe('preSignUp', () => {
       response: {},
     };
 
-    await preSignUp(event, logger);
+    await preSignUp(event, requestId, logger);
 
-    expect(logger.info).toHaveBeenCalledWith('preSignUp - starting');
+    expect(logger.info).toHaveBeenCalledWith(
+      '🏁 Evento iniciado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      '✅ Evento finalizado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
   });
 });

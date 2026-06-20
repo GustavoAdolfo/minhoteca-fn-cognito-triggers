@@ -3,7 +3,7 @@ import {
   ListUsersCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { PreSignUpTriggerEvent } from 'aws-lambda';
-import { Logger } from 'winston';
+import { LogService } from '@gustavoadolfo/minhoteca-core-layer';
 
 const client = new CognitoIdentityProviderClient({
   region: process.env.AWS_REGION,
@@ -11,38 +11,32 @@ const client = new CognitoIdentityProviderClient({
 
 const preSignUp = async (
   event: PreSignUpTriggerEvent,
-  logger: Logger
+  requestId: string,
+  logger: LogService
 ): Promise<PreSignUpTriggerEvent> => {
-  if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-    logger.info('preSignUp - starting');
-  }
+  const triggerSource = event.triggerSource;
+
+  logger.info('🏁 Evento iniciado', { requestId, triggerSource }, { event });
+
   const input = {
     UserPoolId: event.userPoolId,
     AttributesToGet: ['email', 'sub'],
     Filter: `"email"^="${event.request.userAttributes.email}"`,
   };
-  try {
-    // if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-    //   logger.info('preSignUp', { input });
-    // }
-    const command = new ListUsersCommand(input);
-    const response = await client.send(command);
-    // if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-    //   logger.info('preSignUp', { response });
-    // }
 
-    if (response?.Users && response?.Users.length > 0) {
-      logger.info('Usuário já existe', { user: response.Users });
-      throw new Error('E-mail já cadastrado');
-    }
+  const command = new ListUsersCommand(input);
+  const response = await client.send(command);
 
-    event.response.autoConfirmUser = false;
-    event.response.autoVerifyEmail = false;
-    event.response.autoVerifyPhone = false;
-  } catch (error) {
-    logger.error('Error in preSignUp', { error });
+  if (response?.Users && response?.Users.length > 0) {
+    logger.info('Usuário já existe', { requestId, triggerSource, user: response.Users }, { event });
+    throw new Error('E-mail já cadastrado');
   }
 
+  event.response.autoConfirmUser = false;
+  event.response.autoVerifyEmail = false;
+  event.response.autoVerifyPhone = false;
+
+  logger.info('✅ Evento finalizado', { requestId, triggerSource }, { event });
   return event;
 };
 

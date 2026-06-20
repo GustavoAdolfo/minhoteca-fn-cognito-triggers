@@ -3,7 +3,7 @@ import { Agent } from 'http';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { CustomMessageTriggerEvent } from 'aws-lambda';
-import { Logger } from 'winston';
+import { LogService } from '@gustavoadolfo/minhoteca-core-layer';
 
 const getS3Client = () => {
   const config = {
@@ -18,7 +18,7 @@ const getS3Client = () => {
   return new S3Client(config);
 };
 
-async function createPreSignedUrlLogo(logger: Logger): Promise<string> {
+async function createPreSignedUrlLogo(): Promise<string> {
   const bucketName = process.env.BUCKET_RESOURCES ?? '';
   const logoImg = process.env.LOGO_IMG ?? '';
   const logoContentType = process.env.LOGO_CONTENT_TYPE ?? '';
@@ -31,9 +31,6 @@ async function createPreSignedUrlLogo(logger: Logger): Promise<string> {
   const url = await getSignedUrl(client, command, {
     expiresIn: 7 * 24 * 60 * 60,
   });
-  if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-    logger.info('createPreSignedUrlLogo', { url });
-  }
   return url;
 }
 
@@ -50,8 +47,8 @@ async function getTemplateEmail(): Promise<string | undefined> {
   return body;
 }
 
-const sendEmail = async (to: string, user: string, logger: Logger): Promise<string> => {
-  const logoUrl = await createPreSignedUrlLogo(logger);
+const sendEmail = async (to: string, user: string): Promise<string> => {
+  const logoUrl = await createPreSignedUrlLogo();
   let emailTemplate = await getTemplateEmail();
   emailTemplate = emailTemplate?.replace(/{{NOME_USUARIO}}/g, user);
   emailTemplate = emailTemplate?.replace(/{{LOGO_URL}}/g, logoUrl ?? '#');
@@ -69,20 +66,20 @@ const sendEmail = async (to: string, user: string, logger: Logger): Promise<stri
 
 const customMessageSignUp = async (
   event: CustomMessageTriggerEvent,
-  logger: Logger
+  requestId: string,
+  logger: LogService
 ): Promise<CustomMessageTriggerEvent> => {
-  try {
-    if (event.triggerSource === 'CustomMessage_SignUp') {
-      event.response.emailMessage = await sendEmail(
-        event.request.userAttributes.email,
-        event.request.userAttributes.email.split('@')[0],
-        logger
-      );
-      event.response.emailSubject = 'Confirme sua conta na Minhoteca';
-    }
-  } catch (error) {
-    logger.error('Error in customMessage', { error });
+  logger.info('🏁 Evento iniciado', { requestId, triggerSource: event.triggerSource }, { event });
+
+  if (event.triggerSource === 'CustomMessage_SignUp') {
+    event.response.emailMessage = await sendEmail(
+      event.request.userAttributes.email,
+      event.request.userAttributes.email.split('@')[0]
+    );
+    event.response.emailSubject = 'Confirme sua conta na Minhoteca';
   }
+
+  logger.info('✅ Evento finalizado', { requestId, triggerSource: event.triggerSource }, { event });
   return event;
 };
 

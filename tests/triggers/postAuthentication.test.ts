@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 
 describe('postAuthentication', () => {
+  const requestId = 'request-id';
   const originalEnv = process.env;
 
   const setupModule = (options?: { cognitoReject?: unknown; httpStatusCode?: number }) => {
@@ -48,7 +49,7 @@ describe('postAuthentication', () => {
 
   it('returns event without setting password when custom:newUser is not true', async () => {
     const { postAuthentication, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -62,7 +63,7 @@ describe('postAuthentication', () => {
       response: {},
     };
 
-    const result = await postAuthentication(event, logger);
+    const result = await postAuthentication(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.cognitoSendMock).not.toHaveBeenCalled();
@@ -71,7 +72,7 @@ describe('postAuthentication', () => {
 
   it('returns event without setting password when custom:newUser attribute is missing', async () => {
     const { postAuthentication, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -84,7 +85,7 @@ describe('postAuthentication', () => {
       response: {},
     };
 
-    const result = await postAuthentication(event, logger);
+    const result = await postAuthentication(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.cognitoSendMock).not.toHaveBeenCalled();
@@ -93,7 +94,7 @@ describe('postAuthentication', () => {
 
   it('sets user password when custom:newUser is true', async () => {
     const { postAuthentication, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -107,7 +108,7 @@ describe('postAuthentication', () => {
       response: {},
     };
 
-    const result = await postAuthentication(event, logger);
+    const result = await postAuthentication(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.cognitoSendMock).toHaveBeenCalledTimes(1);
@@ -117,7 +118,7 @@ describe('postAuthentication', () => {
 
   it('logs error when password setting returns non-200 status code', async () => {
     const { postAuthentication, mocks } = setupModule({ httpStatusCode: 400 });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -131,17 +132,17 @@ describe('postAuthentication', () => {
       response: {},
     };
 
-    const result = await postAuthentication(event, logger);
+    const result = await postAuthentication(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.cognitoSendMock).toHaveBeenCalledTimes(1);
     expect(logger.error).toHaveBeenCalledWith('Error setting password', expect.any(Object));
   });
 
-  it('logs and throws when Cognito client fails', async () => {
+  it('throws when Cognito client fails', async () => {
     const cognitoError = new Error('cognito-failure');
     const { postAuthentication } = setupModule({ cognitoReject: cognitoError });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -155,16 +156,14 @@ describe('postAuthentication', () => {
       response: {},
     };
 
-    await expect(postAuthentication(event, logger)).rejects.toThrow('cognito-failure');
-    expect(logger.error).toHaveBeenCalledWith('Error in postAuthentication', {
-      error: cognitoError,
-    });
+    await expect(postAuthentication(event, requestId, logger)).rejects.toThrow('cognito-failure');
+    expect(logger.error).not.toHaveBeenCalled();
   });
 
   it('logs start message in debug mode', async () => {
     process.env.ENVIRONMENT = 'debug';
     const { postAuthentication } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -178,14 +177,23 @@ describe('postAuthentication', () => {
       response: {},
     };
 
-    await postAuthentication(event, logger);
+    await postAuthentication(event, requestId, logger);
 
-    expect(logger.info).toHaveBeenCalledWith('Starting postAuthentication...');
+    expect(logger.info).toHaveBeenCalledWith(
+      '🏁 Evento iniciado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      '✅ Evento finalizado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
   });
 
   it('generates a valid password with sufficient complexity', async () => {
     const { postAuthentication, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -199,7 +207,7 @@ describe('postAuthentication', () => {
       response: {},
     };
 
-    await postAuthentication(event, logger);
+    await postAuthentication(event, requestId, logger);
 
     const callArgs = mocks.cognitoSendMock.mock.calls[0][0];
     const password = callArgs.input.Password;
@@ -211,7 +219,7 @@ describe('postAuthentication', () => {
   it('covers password fallback branches when random index is out of bounds', async () => {
     const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(1);
     const { postAuthentication, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -225,7 +233,7 @@ describe('postAuthentication', () => {
       response: {},
     };
 
-    await postAuthentication(event, logger);
+    await postAuthentication(event, requestId, logger);
 
     const callArgs = mocks.cognitoSendMock.mock.calls[0][0];
     const password = callArgs.input.Password as string;
@@ -242,7 +250,7 @@ describe('postAuthentication', () => {
       .spyOn(Math, 'random')
       .mockImplementation(() => randomValues.shift() ?? 0);
     const { postAuthentication, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -256,7 +264,7 @@ describe('postAuthentication', () => {
       response: {},
     };
 
-    await postAuthentication(event, logger);
+    await postAuthentication(event, requestId, logger);
 
     const callArgs = mocks.cognitoSendMock.mock.calls[0][0];
     const password = callArgs.input.Password as string;

@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 
 describe('postConfirmation', () => {
+  const requestId = 'request-id';
   const originalEnv = process.env;
 
   const setupModule = (options?: {
@@ -95,7 +96,7 @@ describe('postConfirmation', () => {
 
   it('sends confirmation email and updates user attributes in Cognito', async () => {
     const { postConfirmation, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -108,11 +109,11 @@ describe('postConfirmation', () => {
       response: {},
     };
 
-    const result = await postConfirmation(event, logger);
+    const result = await postConfirmation(event, requestId, logger);
 
     expect(result).toBe(event);
-    expect(mocks.createPreSignedUrlLogoMock).toHaveBeenCalledWith(logger);
-    expect(mocks.getTemplateEmailMock).toHaveBeenCalledWith('confirmation-template.html', logger);
+    expect(mocks.createPreSignedUrlLogoMock).toHaveBeenCalledWith();
+    expect(mocks.getTemplateEmailMock).toHaveBeenCalledWith('confirmation-template.html');
     expect(mocks.sesSendMock).toHaveBeenCalledTimes(1);
     expect(mocks.cognitoSendMock).toHaveBeenCalledTimes(1);
 
@@ -151,7 +152,7 @@ describe('postConfirmation', () => {
 
   it('does not attempt email send when user email is missing, but still updates attributes', async () => {
     const { postConfirmation, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -162,7 +163,7 @@ describe('postConfirmation', () => {
       response: {},
     };
 
-    const result = await postConfirmation(event, logger);
+    const result = await postConfirmation(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.createPreSignedUrlLogoMock).not.toHaveBeenCalled();
@@ -172,10 +173,10 @@ describe('postConfirmation', () => {
     expect(logger.error).not.toHaveBeenCalled();
   });
 
-  it('logs sendEmail errors and still updates user attributes', async () => {
+  it('throws when sending the confirmation email fails', async () => {
     const sesError = new Error('ses-failure');
     const { postConfirmation, mocks } = setupModule({ sesReject: sesError });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -188,20 +189,17 @@ describe('postConfirmation', () => {
       response: {},
     };
 
-    const result = await postConfirmation(event, logger);
+    await expect(postConfirmation(event, requestId, logger)).rejects.toThrow('ses-failure');
 
-    expect(result).toBe(event);
     expect(mocks.sesSendMock).toHaveBeenCalledTimes(1);
-    expect(mocks.cognitoSendMock).toHaveBeenCalledTimes(1);
-    expect(logger.error).toHaveBeenCalledWith('Error in seneEmail', {
-      error: sesError,
-    });
+    expect(mocks.cognitoSendMock).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
   });
 
-  it('logs postConfirmation error when Cognito update fails and still returns event', async () => {
+  it('throws when Cognito update fails', async () => {
     const cognitoError = new Error('cognito-failure');
     const { postConfirmation, mocks } = setupModule({ cognitoReject: cognitoError });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -214,13 +212,10 @@ describe('postConfirmation', () => {
       response: {},
     };
 
-    const result = await postConfirmation(event, logger);
+    await expect(postConfirmation(event, requestId, logger)).rejects.toThrow('cognito-failure');
 
-    expect(result).toBe(event);
     expect(mocks.cognitoSendMock).toHaveBeenCalledTimes(1);
-    expect(logger.error).toHaveBeenCalledWith('Error in postConfirmation', {
-      error: cognitoError,
-    });
+    expect(logger.error).not.toHaveBeenCalled();
   });
 
   it('covers debug mode and env fallback branches in sendEmail and Cognito attributes', async () => {
@@ -236,7 +231,7 @@ describe('postConfirmation', () => {
       templateBody:
         'Olá {{NOME_USUARIO}}, logo {{LOGO_URL}}, sobre {{LINK_SOBRE}}, priv {{LINK_POLITICA_DE_PRIVACIDADE}}, termo {{LINK_TERMO_DE_USO}}',
     });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -249,11 +244,15 @@ describe('postConfirmation', () => {
       response: {},
     };
 
-    const result = await postConfirmation(event, logger);
+    const result = await postConfirmation(event, requestId, logger);
 
     expect(result).toBe(event);
-    expect(logger.info).toHaveBeenCalledWith('Starting postConfirmation...');
-    expect(mocks.getTemplateEmailMock).toHaveBeenCalledWith('', logger);
+    expect(logger.info).toHaveBeenCalledWith(
+      '🏁 Evento iniciado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
+    expect(mocks.getTemplateEmailMock).toHaveBeenCalledWith('');
 
     const emailCommand = mocks.sesSendMock.mock.calls[0][0];
     const textData = emailCommand.input?.Message?.Body?.Text?.Data;
@@ -278,7 +277,7 @@ describe('postConfirmation', () => {
     const { postConfirmation, mocks } = setupModule({
       templateBody: undefined,
     });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -291,7 +290,7 @@ describe('postConfirmation', () => {
       response: {},
     };
 
-    const result = await postConfirmation(event, logger);
+    const result = await postConfirmation(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.sesSendMock).toHaveBeenCalledTimes(1);

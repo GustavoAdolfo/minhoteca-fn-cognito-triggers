@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 
 describe('createAuthChallenge', () => {
+  const requestId = 'request-id';
   const originalEnv = process.env;
 
   const loadModule = () => require('../../src/triggers/createAuthChallenge');
@@ -56,7 +57,7 @@ describe('createAuthChallenge', () => {
     }));
 
     const { createAuthChallenge } = loadModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -69,11 +70,11 @@ describe('createAuthChallenge', () => {
       response: {},
     };
 
-    const result = await createAuthChallenge(event, logger);
+    const result = await createAuthChallenge(event, requestId, logger);
 
     expect(result.response.privateChallengeParameters).toEqual({ code: '123456' });
-    expect(createPreSignedUrlLogoMock).toHaveBeenCalledWith(logger);
-    expect(getTemplateEmailMock).toHaveBeenCalledWith('welcome-template', logger);
+    expect(createPreSignedUrlLogoMock).toHaveBeenCalledWith();
+    expect(getTemplateEmailMock).toHaveBeenCalledWith('welcome-template');
     expect(cognitoSendMock).toHaveBeenCalledTimes(1);
     expect(sesSendMock).toHaveBeenCalledTimes(1);
 
@@ -113,7 +114,7 @@ describe('createAuthChallenge', () => {
     }));
 
     const { createAuthChallenge } = loadModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -126,7 +127,7 @@ describe('createAuthChallenge', () => {
       response: {},
     };
 
-    const result = await createAuthChallenge(event, logger);
+    const result = await createAuthChallenge(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(cognitoSendMock).toHaveBeenCalledTimes(1);
@@ -161,7 +162,7 @@ describe('createAuthChallenge', () => {
     }));
 
     const { createAuthChallenge } = loadModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -172,7 +173,7 @@ describe('createAuthChallenge', () => {
       response: {},
     };
 
-    const result = await createAuthChallenge(event, logger);
+    const result = await createAuthChallenge(event, requestId, logger);
 
     expect(result.response.privateChallengeParameters).toEqual({ code: '123456' });
     expect(cognitoSendMock).toHaveBeenCalledTimes(1);
@@ -181,7 +182,7 @@ describe('createAuthChallenge', () => {
     expect(sesSendMock).not.toHaveBeenCalled();
   });
 
-  it('logs and rethrows when the Cognito lookup fails', async () => {
+  it('rethrows when the Cognito lookup fails', async () => {
     const error = new Error('cognito failure');
     const cognitoSendMock = jest.fn().mockRejectedValue(error);
     const sesSendMock = jest.fn();
@@ -208,7 +209,7 @@ describe('createAuthChallenge', () => {
     }));
 
     const { createAuthChallenge } = loadModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -221,13 +222,11 @@ describe('createAuthChallenge', () => {
       response: {},
     };
 
-    await expect(createAuthChallenge(event, logger)).rejects.toThrow('cognito failure');
-    expect(logger.error).toHaveBeenCalledWith('Error in createAuthChallenge', {
-      error,
-    });
+    await expect(createAuthChallenge(event, requestId, logger)).rejects.toThrow('cognito failure');
+    expect(logger.error).not.toHaveBeenCalled();
   });
 
-  it('covers debug and fallback branches while handling SES failures', async () => {
+  it('covers debug and fallback branches while propagating SES failures', async () => {
     process.env.ENVIRONMENT = 'debug';
     delete process.env.AWS_REGION;
     delete process.env.TEMPLATE_EMAIL_LOGIN;
@@ -264,7 +263,7 @@ describe('createAuthChallenge', () => {
     }));
 
     const { createAuthChallenge } = loadModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -277,16 +276,13 @@ describe('createAuthChallenge', () => {
       response: {},
     };
 
-    const result = await createAuthChallenge(event, logger);
+    await expect(createAuthChallenge(event, requestId, logger)).rejects.toThrow('ses failure');
 
-    expect(result.response.privateChallengeParameters).toEqual({ code: '123456' });
-    expect(getTemplateEmailMock).toHaveBeenCalledWith('', logger);
-    expect(logger.info).toHaveBeenCalledWith('Starting createAuthChallenge...');
+    expect(event.response.privateChallengeParameters).toBeUndefined();
+    expect(getTemplateEmailMock).toHaveBeenCalledWith('');
     expect(logger.info).toHaveBeenCalledWith('code', { code: '123456' });
     expect(sesSendMock).toHaveBeenCalledTimes(1);
-    expect(logger.error).toHaveBeenCalledWith('sedEmail', {
-      error: expect.any(Error),
-    });
+    expect(logger.error).not.toHaveBeenCalled();
 
     const params = sesSendMock.mock.calls[0][0];
     expect(params.Message?.Body?.Text?.Data).toBe('user|#|#|#|#|123456');
@@ -321,7 +317,7 @@ describe('createAuthChallenge', () => {
     }));
 
     const { createAuthChallenge } = loadModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       userPoolId: 'pool-id',
@@ -334,10 +330,10 @@ describe('createAuthChallenge', () => {
       response: {},
     };
 
-    const result = await createAuthChallenge(event, logger);
+    const result = await createAuthChallenge(event, requestId, logger);
 
     expect(result.response.privateChallengeParameters).toEqual({ code: '123456' });
-    expect(getTemplateEmailMock).toHaveBeenCalledWith('welcome-template', logger);
+    expect(getTemplateEmailMock).toHaveBeenCalledWith('welcome-template');
     expect(sesSendMock).toHaveBeenCalledTimes(1);
     const params = sesSendMock.mock.calls[0][0];
     expect(params.Message?.Body?.Text?.Data).toBeUndefined();

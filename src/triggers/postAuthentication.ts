@@ -3,7 +3,7 @@ import {
   AdminSetUserPasswordCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { PostAuthenticationTriggerEvent } from 'aws-lambda';
-import { Logger } from 'winston';
+import { LogService } from '@gustavoadolfo/minhoteca-core-layer';
 
 const client = new CognitoIdentityProviderClient({
   region: process.env.AWS_REGION,
@@ -36,34 +36,34 @@ const generatePassword = () => {
 
 const postAuthentication = async (
   event: PostAuthenticationTriggerEvent,
-  logger: Logger
+  requestId: string,
+  logger: LogService
 ): Promise<PostAuthenticationTriggerEvent> => {
-  if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-    logger.info('Starting postAuthentication...');
-  }
-  try {
-    if (event.request.userAttributes['custom:newUser'] === 'true') {
-      // TODO: SE O ATRIBUTO NEWUSER = TRUE
-      const command = new AdminSetUserPasswordCommand({
-        UserPoolId: event.userPoolId,
-        Username: event.userName,
-        Password: generatePassword(),
-        Permanent: true,
-      });
-      const response = await client.send(command);
-      if (response.$metadata.httpStatusCode === 200) {
-        logger.info('Password set successfully');
-      } else {
-        logger.error('Error setting password', { response });
-      }
-      return event;
+  const triggerSource = event.triggerSource;
+
+  logger.info('🏁 Evento iniciado', { requestId, triggerSource }, { event });
+
+  if (event.request.userAttributes['custom:newUser'] === 'true') {
+    // TODO: SE O ATRIBUTO NEWUSER = TRUE
+    const command = new AdminSetUserPasswordCommand({
+      UserPoolId: event.userPoolId,
+      Username: event.userName,
+      Password: generatePassword(),
+      Permanent: true,
+    });
+    const response = await client.send(command);
+    if (response.$metadata.httpStatusCode === 200) {
+      logger.info('Password set successfully');
+    } else {
+      logger.error('Error setting password', { response });
     }
 
+    logger.info('✅ Evento finalizado', { requestId, triggerSource }, { event });
     return event;
-  } catch (error) {
-    logger.error('Error in postAuthentication', { error });
-    throw error;
   }
+
+  logger.info('✅ Evento finalizado', { requestId, triggerSource }, { event });
+  return event;
 };
 
 export { postAuthentication };

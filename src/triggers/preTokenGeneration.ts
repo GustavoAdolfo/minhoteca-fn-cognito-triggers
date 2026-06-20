@@ -3,7 +3,7 @@ import {
   ListUsersCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { PreTokenGenerationTriggerEvent } from 'aws-lambda';
-import { Logger } from 'winston';
+import { LogService } from '@gustavoadolfo/minhoteca-core-layer';
 
 const client = new CognitoIdentityProviderClient({
   region: process.env.AWS_REGION,
@@ -11,30 +11,27 @@ const client = new CognitoIdentityProviderClient({
 
 const preTokenGeneration = async (
   event: PreTokenGenerationTriggerEvent,
-  logger: Logger
+  requestId: string,
+  logger: LogService
 ): Promise<PreTokenGenerationTriggerEvent> => {
-  if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-    logger.info('Starting customEmailSender...');
-  }
+  const triggerSource = event.triggerSource;
+
+  logger.info('🏁 Evento iniciado', { requestId, triggerSource }, { event });
+
+  const input = {
+    UserPoolId: event.userPoolId,
+    // AttributesToGet: ["email", "sub", "custom:borrowApproved"],
+    Filter: `"sub"^="${event.request.userAttributes.sub}"`,
+  };
+
+  const command = new ListUsersCommand(input);
+  const response = await client.send(command);
+
   let canBorrow = false;
-  try {
-    const input = {
-      UserPoolId: event.userPoolId,
-      // AttributesToGet: ["email", "sub", "custom:borrowApproved"],
-      Filter: `"sub"^="${event.request.userAttributes.sub}"`,
-    };
-
-    const command = new ListUsersCommand(input);
-    const response = await client.send(command);
-
-    if (response.Users && response.Users.length > 0) {
-      canBorrow =
-        response?.Users[0]?.Attributes?.find((attr) => attr.Name === 'custom:borrowApproved')
-          ?.Value === 'true';
-    }
-  } catch (error) {
-    logger.error('Error in preTokenGeneration!', { error });
-    throw error;
+  if (response.Users && response.Users.length > 0) {
+    canBorrow =
+      response?.Users[0]?.Attributes?.find((attr) => attr.Name === 'custom:borrowApproved')
+        ?.Value === 'true';
   }
 
   event.response.claimsOverrideDetails = {
@@ -42,6 +39,8 @@ const preTokenGeneration = async (
       borrowApproved: String(canBorrow),
     },
   };
+
+  logger.info('✅ Evento finalizado', { requestId, triggerSource }, { event });
 
   return event;
 };

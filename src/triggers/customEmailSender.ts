@@ -1,7 +1,6 @@
 import b64 from 'base64-js';
 import { CustomEmailSenderTriggerEvent } from 'aws-lambda';
-import { Logger } from 'winston';
-// @ts-expect-error - Mocked in tests
+import { LogService } from '@gustavoadolfo/minhoteca-core-layer';
 import { buildClient, CommitmentPolicy, KmsKeyringNode } from '@aws-crypto/client-node';
 import { SES, SendEmailCommand } from '@aws-sdk/client-ses';
 import { createPreSignedUrlLogo, getTemplateEmail } from './commom';
@@ -11,12 +10,11 @@ const ses = new SES();
 const sendEmailSignUp = async (
   code: string,
   to: string | null | undefined,
-  userName: string,
-  logger: Logger
+  userName: string
 ): Promise<void> => {
-  const logoUrl = await createPreSignedUrlLogo(logger);
+  const logoUrl = await createPreSignedUrlLogo();
   const template = process.env.TEMPLATE_EMAIL_SIGNUP ?? '';
-  let emailTemplate = await getTemplateEmail(template, logger);
+  let emailTemplate = await getTemplateEmail(template);
   emailTemplate = (emailTemplate ?? '')
     .replace('{####}', code)
     .replace(/{{NOME_USUARIO}}/g, userName)
@@ -24,15 +22,10 @@ const sendEmailSignUp = async (
     .replace(/{{LINK_SOBRE}}/g, process.env.LINK_SOBRE ?? '#')
     .replace(/{{LINK_POLITICA_DE_PRIVACIDADE}}/g, process.env.LINK_POLITICA_DE_PRIVACIDADE ?? '#')
     .replace(/{{LINK_TERMO_DE_USO}}/g, process.env.LINK_TERMO_DE_USO ?? '#');
-  await sendEmail(emailTemplate, to ?? '', logoUrl ?? '#', logger);
+  await sendEmail(emailTemplate, to ?? '', logoUrl ?? '#');
 };
 
-const sendEmail = async (
-  templateData: string,
-  to: string,
-  logoUrl: string,
-  logger: Logger
-): Promise<void> => {
+const sendEmail = async (templateData: string, to: string, logoUrl: string): Promise<void> => {
   const eParams = {
     Destination: {
       ToAddresses: [to],
@@ -79,19 +72,17 @@ const sendEmail = async (
     ],
   };
 
-  if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-    logger.info('sendEmail - 2', { eParams });
-  }
   await ses.send(new SendEmailCommand(eParams));
 };
 
 const customEmailSender = async (
   event: CustomEmailSenderTriggerEvent,
-  logger: Logger
+  requestId: string,
+  logger: LogService
 ): Promise<CustomEmailSenderTriggerEvent> => {
-  if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-    logger.info('Starting customEmailSender...');
-  }
+  const triggerSource = event.triggerSource;
+
+  logger.info('🏁 Evento iniciado', { requestId, triggerSource }, { event });
 
   let plainTextCode: string = '';
 
@@ -108,17 +99,26 @@ const customEmailSender = async (
     await sendEmailSignUp(
       plainTextCode,
       event.request.userAttributes.email,
-      event.request.userAttributes.email.split('@')[0],
-      logger
+      event.request.userAttributes.email.split('@')[0]
     );
   } else if (event.triggerSource === 'CustomEmailSender_ResendCode') {
+    logger.warn('⚠️ Trigger source não tratado', { triggerSource, requestId }, { event });
   } else if (event.triggerSource === 'CustomEmailSender_ForgotPassword') {
+    logger.warn('⚠️ Trigger source não tratado', { triggerSource, requestId }, { event });
   } else if (event.triggerSource === 'CustomEmailSender_UpdateUserAttribute') {
+    logger.warn('⚠️ Trigger source não tratado', { triggerSource, requestId }, { event });
   } else if (event.triggerSource === 'CustomEmailSender_VerifyUserAttribute') {
+    logger.warn('⚠️ Trigger source não tratado', { triggerSource, requestId }, { event });
   } else if (event.triggerSource === 'CustomEmailSender_AdminCreateUser') {
+    logger.warn('⚠️ Trigger source não tratado', { triggerSource, requestId }, { event });
   } else if (event.triggerSource === 'CustomEmailSender_AccountTakeOverNotification') {
+    logger.warn('⚠️ Trigger source não tratado', { triggerSource, requestId }, { event });
   } else {
+    logger.warn('⚠️ Trigger source não tratado', { triggerSource, requestId }, { event });
   }
+
+  logger.info('✅ Evento finalizado', { requestId, triggerSource }, { event });
+
   return event;
 };
 
