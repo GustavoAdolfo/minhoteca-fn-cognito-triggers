@@ -1,9 +1,11 @@
 variable "account_id" { type = string }
 variable "region_name" { type = string }
 variable "application_tags" { type = map(string) }
-variable "user_pool_name" { type = string }
-variable "user_pool_id" { type = string }
-variable "user_pool_client_id" { type = string }
+
+variable "email_principal" {
+  type        = string
+  description = "Email principal para envio dos emails e contato nos templates"
+}
 variable "lambda_cognito_triggers_log_retention" {
   type    = number
   default = 5
@@ -41,3 +43,5 @@ variable "lambda_cognito_triggers_reserved_concurrent_executions" {
 variable "coreLayer_arn" {
   type = string
 }
+
+

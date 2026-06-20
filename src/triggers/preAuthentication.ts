@@ -1,14 +1,18 @@
 import { PreAuthenticationTriggerEvent } from 'aws-lambda';
-import { Logger } from 'winston';
+import { LogService } from '@gustavoadolfo/minhoteca-core-layer';
 
-const preAuthenticaton = async (
+const preAuthentication = async (
   event: PreAuthenticationTriggerEvent,
-  logger: Logger
+  requestId: string,
+  logger: LogService
 ): Promise<PreAuthenticationTriggerEvent> => {
-  if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-    logger.info('Starting preAuthenticaton...');
-  }
+  const triggerSource = event.triggerSource;
+
+  logger.info('🏁 Evento iniciado', { requestId, triggerSource }, { event });
+
+  logger.info('✅ Evento finalizado', { requestId, triggerSource }, { event });
+
   return event;
 };
 
-export { preAuthenticaton };
+export { preAuthentication };

@@ -1,73 +1,118 @@
-import { createLogger, format, transports } from 'winston';
+import {
+  PreSignUpTriggerEvent,
+  CustomMessageTriggerEvent,
+  PostConfirmationTriggerEvent,
+  PreAuthenticationTriggerEvent,
+  PostAuthenticationTriggerEvent,
+  DefineAuthChallengeTriggerEvent,
+  CustomEmailSenderTriggerEvent,
+  CreateAuthChallengeTriggerEvent,
+  VerifyAuthChallengeResponseTriggerEvent,
+  PreTokenGenerationTriggerEvent,
+  Context,
+  Callback,
+} from 'aws-lambda';
+
+import { LogService } from '@gustavoadolfo/minhoteca-core-layer';
+
 import {
   defineAuthChallenge,
   postConfirmation,
   preSignUp,
   postAuthentication,
   createAuthChallenge,
-  preAuthenticaton,
+  preAuthentication,
   customEmailSender,
   verifyAuthChallenge,
   preTokenGeneration,
   customMessageSignUp,
 } from './triggers';
 
-const { timestamp, label, combine } = format;
-const formatoLog = combine(
-  label({ label: 'minhoteca-cognito-triggers' }),
-  timestamp(),
-  format.splat(),
-  format.json()
-);
-const logger = createLogger({
-  level: 'info',
-  format: formatoLog,
-  transports: [new transports.Console()],
-});
+const logger = new LogService('handler');
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const loggerInspect = (message: string, info: any) => {
-  /* istanbul ignore next */
-  if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-    info ? logger.info(message, info) : logger.info(message);
-  }
-};
+export const handler = async (
+  event:
+    | PreSignUpTriggerEvent
+    | CustomMessageTriggerEvent
+    | PostConfirmationTriggerEvent
+    | PreAuthenticationTriggerEvent
+    | PostAuthenticationTriggerEvent
+    | DefineAuthChallengeTriggerEvent
+    | CustomEmailSenderTriggerEvent
+    | CreateAuthChallengeTriggerEvent
+    | VerifyAuthChallengeResponseTriggerEvent
+    | PreTokenGenerationTriggerEvent,
+  context: Context,
+  callback: Callback
+) => {
+  const triggerSource = event.triggerSource;
+  const requestId = context.awsRequestId;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
-export const handler = async (event: any, context: any, callback: any) => {
-  loggerInspect('event', { event });
-
-  logger.info(`Starting event handler to trigger ${event.triggerSource}`);
+  logger.info(
+    '🏁 Iniciando handler cognito trigger',
+    {
+      triggerSource,
+      requestId,
+    },
+    { event }
+  );
 
   let resultEvent;
 
   try {
-    const triggerSource = event.triggerSource || event.trigger_source;
+    const triggerSource = event.triggerSource;
     switch (triggerSource) {
       case 'PreSignUp_SignUp':
-        resultEvent = await preSignUp(event, logger);
-        loggerInspect('resultEvent preSignUp', { resultEvent });
+        resultEvent = await preSignUp(event as PreSignUpTriggerEvent, requestId, logger);
+        logger.info('resultEvent preSignUp', { resultEvent });
         return resultEvent;
+
       case 'CustomMessage_SignUp':
-        resultEvent = await customMessageSignUp(event, logger);
-        loggerInspect('resultEvent customMessageSignUp', { resultEvent });
+        resultEvent = await customMessageSignUp(
+          event as CustomMessageTriggerEvent,
+          requestId,
+          logger
+        );
+        logger.info('resultEvent customMessageSignUp', { resultEvent });
         return resultEvent;
+
       case 'PostConfirmation_ConfirmSignUp':
-        resultEvent = await postConfirmation(event, logger);
-        loggerInspect('resultEvent postConfirmation', { resultEvent });
+        resultEvent = await postConfirmation(
+          event as PostConfirmationTriggerEvent,
+          requestId,
+          logger
+        );
+        logger.info('resultEvent postConfirmation', { resultEvent });
         return resultEvent;
+
       case 'PreAuthentication_Authentication':
-        resultEvent = await preAuthenticaton(event, logger);
-        loggerInspect('resultEvent preAuthenticaton', { resultEvent });
+        resultEvent = await preAuthentication(
+          event as PreAuthenticationTriggerEvent,
+          requestId,
+          logger
+        );
+        logger.info('resultEvent preAuthenticaton', { resultEvent });
         return resultEvent;
+
       case 'PostAuthentication_Authentication':
-        resultEvent = await postAuthentication(event, logger);
-        loggerInspect('resultEvent postAuthentication', { resultEvent });
+        resultEvent = await postAuthentication(
+          event as PostAuthenticationTriggerEvent,
+          requestId,
+          logger
+        );
+        logger.info('resultEvent postAuthentication', { resultEvent });
         return resultEvent;
+
       case 'DefineAuthChallenge_Authentication':
-        resultEvent = await defineAuthChallenge(event, logger);
-        loggerInspect('resultEvent defineAuthChallenge', { resultEvent });
+        resultEvent = await defineAuthChallenge(
+          event as DefineAuthChallengeTriggerEvent,
+          requestId,
+          logger
+        );
+        logger.info('resultEvent defineAuthChallenge', { resultEvent });
         return resultEvent;
+
+      case 'CustomEmailSender_Authentication':
       case 'CustomEmailSender_SignUp':
       case 'CustomEmailSender_ResendCode':
       case 'CustomEmailSender_ForgotPassword':
@@ -75,30 +120,54 @@ export const handler = async (event: any, context: any, callback: any) => {
       case 'CustomEmailSender_VerifyUserAttribute':
       case 'CustomEmailSender_AccountTakeOverNotification':
       case 'CustomEmailSender_AdminCreateUser':
-        resultEvent = await customEmailSender(event, logger);
-        loggerInspect('resultEvent customEmailSender', { resultEvent });
+        resultEvent = await customEmailSender(
+          event as CustomEmailSenderTriggerEvent,
+          requestId,
+          logger
+        );
+        logger.info('resultEvent customEmailSender', { resultEvent });
         return resultEvent;
+
       case 'CreateAuthChallenge_Authentication':
-        resultEvent = await createAuthChallenge(event, logger);
-        loggerInspect('resultEvent createAuthChallenge', { resultEvent });
+        resultEvent = await createAuthChallenge(
+          event as CreateAuthChallengeTriggerEvent,
+          requestId,
+          logger
+        );
+        logger.info('resultEvent createAuthChallenge', { resultEvent });
         return resultEvent;
+
       case 'VerifyAuthChallengeResponse_Authentication':
-        resultEvent = await verifyAuthChallenge(event, logger);
-        loggerInspect('resultEvent verifyAuthChallenge', { resultEvent });
+        resultEvent = await verifyAuthChallenge(
+          event as VerifyAuthChallengeResponseTriggerEvent,
+          requestId,
+          logger
+        );
+        logger.info('resultEvent verifyAuthChallenge', { resultEvent });
         return resultEvent;
+
       case 'TokenGeneration_NewPasswordChallenge':
       case 'TokenGeneration_Authentication':
       case 'TokenGeneration_AuthenticateDevice':
       case 'TokenGeneration_RefreshTokens':
-        resultEvent = await preTokenGeneration(event, logger);
-        loggerInspect('resultEvent preTokenGeneration', { resultEvent });
+        resultEvent = await preTokenGeneration(
+          event as PreTokenGenerationTriggerEvent,
+          requestId,
+          logger
+        );
+        logger.info('resultEvent TokenGeneration', { resultEvent });
         return resultEvent;
+
       default:
-        break;
+        logger.error('Evento não tratado', {
+          triggerSource,
+          requestId: context.awsRequestId,
+          event,
+        });
+        throw new Error(`Evento não tratado: ${triggerSource}`);
     }
-    callback(null, resultEvent || event);
-  } catch (error) {
-    logger.error('handler', { error });
-    callback(new Error(`Erro na execução do evento ${event.triggerSource ?? ''}`), event);
+  } catch (error: unknown) {
+    logger.error('handler', { triggerSource, requestId }, error as Error, { event });
+    callback(error as Error, event);
   }
 };

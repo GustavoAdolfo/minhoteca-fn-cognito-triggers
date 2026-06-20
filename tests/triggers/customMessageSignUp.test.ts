@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 
 describe('customMessageSignUp', () => {
+  const requestId = 'request-id';
   const originalEnv = process.env;
 
   const setupModule = (options?: {
@@ -102,7 +103,7 @@ describe('customMessageSignUp', () => {
 
   it('builds and sets the signup email message and subject for CustomMessage_SignUp', async () => {
     const { customMessageSignUp, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomMessage_SignUp',
@@ -114,7 +115,7 @@ describe('customMessageSignUp', () => {
       response: {},
     };
 
-    const result = await customMessageSignUp(event, logger);
+    const result = await customMessageSignUp(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.getSignedUrlMock).toHaveBeenCalledTimes(1);
@@ -130,7 +131,7 @@ describe('customMessageSignUp', () => {
 
   it('returns event unchanged when triggerSource is not CustomMessage_SignUp', async () => {
     const { customMessageSignUp, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomMessage_ResendCode',
@@ -142,7 +143,7 @@ describe('customMessageSignUp', () => {
       response: {},
     };
 
-    const result = await customMessageSignUp(event, logger);
+    const result = await customMessageSignUp(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(result.response.emailMessage).toBeUndefined();
@@ -152,12 +153,12 @@ describe('customMessageSignUp', () => {
     expect(logger.error).not.toHaveBeenCalled();
   });
 
-  it('logs an error and returns event when generating the logo URL fails', async () => {
+  it('rethrows when generating the logo URL fails', async () => {
     const signedUrlError = new Error('signed-url-failure');
     const { customMessageSignUp, mocks } = setupModule({
       signedUrlReject: signedUrlError,
     });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomMessage_SignUp',
@@ -169,22 +170,21 @@ describe('customMessageSignUp', () => {
       response: {},
     };
 
-    const result = await customMessageSignUp(event, logger);
+    await expect(customMessageSignUp(event, requestId, logger)).rejects.toThrow(
+      'signed-url-failure'
+    );
 
-    expect(result).toBe(event);
     expect(mocks.getSignedUrlMock).toHaveBeenCalledTimes(1);
     expect(mocks.s3SendMock).not.toHaveBeenCalled();
-    expect(logger.error).toHaveBeenCalledWith('Error in customMessage', {
-      error: signedUrlError,
-    });
+    expect(logger.error).not.toHaveBeenCalled();
   });
 
-  it('logs an error and returns event when reading template from S3 fails', async () => {
+  it('rethrows when reading template from S3 fails', async () => {
     const s3Error = new Error('s3-failure');
     const { customMessageSignUp, mocks } = setupModule({
       s3SendReject: s3Error,
     });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomMessage_SignUp',
@@ -196,14 +196,11 @@ describe('customMessageSignUp', () => {
       response: {},
     };
 
-    const result = await customMessageSignUp(event, logger);
+    await expect(customMessageSignUp(event, requestId, logger)).rejects.toThrow('s3-failure');
 
-    expect(result).toBe(event);
     expect(mocks.getSignedUrlMock).toHaveBeenCalledTimes(1);
     expect(mocks.s3SendMock).toHaveBeenCalledTimes(1);
-    expect(logger.error).toHaveBeenCalledWith('Error in customMessage', {
-      error: s3Error,
-    });
+    expect(logger.error).not.toHaveBeenCalled();
   });
 
   it('covers debug logs and env fallbacks when optional values are missing', async () => {
@@ -223,7 +220,7 @@ describe('customMessageSignUp', () => {
       templateBody:
         'Olá {{NOME_USUARIO}}, logo {{LOGO_URL}}, sobre {{LINK_SOBRE}}, privacidade {{LINK_POLITICA_DE_PRIVACIDADE}}, termo {{LINK_TERMO_DE_USO}}',
     });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomMessage_SignUp',
@@ -235,7 +232,7 @@ describe('customMessageSignUp', () => {
       response: {},
     };
 
-    const result = await customMessageSignUp(event, logger);
+    const result = await customMessageSignUp(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(result.response.emailMessage).toContain('Olá usuario');
@@ -243,7 +240,16 @@ describe('customMessageSignUp', () => {
     expect(result.response.emailMessage).toContain('sobre #');
     expect(result.response.emailMessage).toContain('privacidade #');
     expect(result.response.emailMessage).toContain('termo #');
-    expect(logger.info).toHaveBeenCalledWith('createPreSignedUrlLogo', { url: undefined });
+    expect(logger.info).toHaveBeenCalledWith(
+      '🏁 Evento iniciado',
+      { requestId, triggerSource: 'CustomMessage_SignUp' },
+      { event }
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      '✅ Evento finalizado',
+      { requestId, triggerSource: 'CustomMessage_SignUp' },
+      { event }
+    );
     expect(mocks.s3ClientCtorMock).toHaveBeenCalledWith(
       expect.objectContaining({
         region: 'us-east-1',
@@ -271,7 +277,7 @@ describe('customMessageSignUp', () => {
     const { customMessageSignUp } = setupModule({
       responseWithoutBody: true,
     });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomMessage_SignUp',
@@ -283,7 +289,7 @@ describe('customMessageSignUp', () => {
       response: {},
     };
 
-    const result = await customMessageSignUp(event, logger);
+    const result = await customMessageSignUp(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(result.response.emailMessage).toBe('');

@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 
 describe('preTokenGeneration', () => {
+  const requestId = 'request-id';
   const originalEnv = process.env;
 
   const setupModule = (options?: {
@@ -74,7 +75,7 @@ describe('preTokenGeneration', () => {
     };
 
     const event = createEvent();
-    const result = await preTokenGeneration(event, logger);
+    const result = await preTokenGeneration(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.listUsersCommandMock).toHaveBeenCalledWith({
@@ -96,7 +97,7 @@ describe('preTokenGeneration', () => {
     };
 
     const event = createEvent();
-    const result = await preTokenGeneration(event, logger);
+    const result = await preTokenGeneration(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.sendMock).toHaveBeenCalledTimes(1);
@@ -119,14 +120,14 @@ describe('preTokenGeneration', () => {
     };
 
     const event = createEvent();
-    const result = await preTokenGeneration(event, logger);
+    const result = await preTokenGeneration(event, requestId, logger);
 
     expect(result.response.claimsOverrideDetails.claimsToAddOrOverride).toEqual({
       borrowApproved: 'false',
     });
   });
 
-  it('logs start in debug mode', async () => {
+  it('logs start and finish messages', async () => {
     process.env.ENVIRONMENT = 'debug';
     const { preTokenGeneration } = setupModule({ users: [] });
     const logger = {
@@ -135,12 +136,21 @@ describe('preTokenGeneration', () => {
     };
 
     const event = createEvent();
-    await preTokenGeneration(event, logger);
+    await preTokenGeneration(event, requestId, logger);
 
-    expect(logger.info).toHaveBeenCalledWith('Starting customEmailSender...');
+    expect(logger.info).toHaveBeenCalledWith(
+      '🏁 Evento iniciado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      '✅ Evento finalizado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
   });
 
-  it('logs and rethrows when Cognito list users fails', async () => {
+  it('rethrows when Cognito list users fails', async () => {
     const sendError = new Error('cognito-list-failure');
     const { preTokenGeneration, mocks } = setupModule({ sendReject: sendError });
     const logger = {
@@ -150,10 +160,8 @@ describe('preTokenGeneration', () => {
 
     const event = createEvent();
 
-    await expect(preTokenGeneration(event, logger)).rejects.toThrow('cognito-list-failure');
+    await expect(preTokenGeneration(event, requestId, logger)).rejects.toThrow('cognito-list-failure');
     expect(mocks.sendMock).toHaveBeenCalledTimes(1);
-    expect(logger.error).toHaveBeenCalledWith('Error in preTokenGeneration!', {
-      error: sendError,
-    });
+    expect(logger.error).not.toHaveBeenCalled();
   });
 });

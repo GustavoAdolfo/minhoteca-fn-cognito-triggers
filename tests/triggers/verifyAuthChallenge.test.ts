@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import { verifyAuthChallenge } from '../../src/triggers/verifyAuthChallenge';
 
 describe('verifyAuthChallenge', () => {
+  const requestId = 'request-id';
   const originalEnv = process.env;
 
   const logger = {
@@ -31,7 +32,7 @@ describe('verifyAuthChallenge', () => {
   it('marks the challenge as correct when the provided answer matches the expected code', async () => {
     const event = createEvent('123456', '123456');
 
-    const result = await verifyAuthChallenge(event as never, logger as never);
+    const result = await verifyAuthChallenge(event as never, requestId, logger as never);
 
     expect(result.response.answerCorrect).toBe(true);
     expect(logger.error).not.toHaveBeenCalled();
@@ -40,7 +41,7 @@ describe('verifyAuthChallenge', () => {
   it('marks the challenge as incorrect when the provided answer differs from the expected code', async () => {
     const event = createEvent('123456', '654321');
 
-    const result = await verifyAuthChallenge(event as never, logger as never);
+    const result = await verifyAuthChallenge(event as never, requestId, logger as never);
 
     expect(result.response.answerCorrect).toBe(false);
     expect(logger.error).not.toHaveBeenCalled();
@@ -49,7 +50,7 @@ describe('verifyAuthChallenge', () => {
   it('trims whitespace before comparing the expected and provided answers', async () => {
     const event = createEvent(' 123456 ', '123456');
 
-    const result = await verifyAuthChallenge(event as never, logger as never);
+    const result = await verifyAuthChallenge(event as never, requestId, logger as never);
 
     expect(result.response.answerCorrect).toBe(true);
   });
@@ -61,7 +62,7 @@ describe('verifyAuthChallenge', () => {
   ])('marks the challenge as incorrect when %s', async (_description, code, answer) => {
     const event = createEvent(code, answer);
 
-    const result = await verifyAuthChallenge(event as never, logger as never);
+    const result = await verifyAuthChallenge(event as never, requestId, logger as never);
 
     expect(result.response.answerCorrect).toBe(false);
     expect(logger.error).not.toHaveBeenCalled();
@@ -71,10 +72,14 @@ describe('verifyAuthChallenge', () => {
     process.env.ENVIRONMENT = 'debug';
     const event = createEvent('123456', '123456');
 
-    const result = await verifyAuthChallenge(event as never, logger as never);
+    const result = await verifyAuthChallenge(event as never, requestId, logger as never);
 
     expect(result.response.answerCorrect).toBe(true);
-    expect(logger.info).toHaveBeenCalledWith('Starting verifyAuthChallenge...');
+    expect(logger.info).toHaveBeenCalledWith(
+      '🏁 Evento iniciado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
     expect(logger.info).toHaveBeenCalledWith('responseAnswer === expectedAnswer', {
       expectedAnswer: '123456',
       responseAnswer: '123456',
@@ -86,10 +91,14 @@ describe('verifyAuthChallenge', () => {
     process.env.ENVIRONMENT = 'debug';
     const event = createEvent('123456', '000000');
 
-    const result = await verifyAuthChallenge(event as never, logger as never);
+    const result = await verifyAuthChallenge(event as never, requestId, logger as never);
 
     expect(result.response.answerCorrect).toBe(false);
-    expect(logger.info).toHaveBeenCalledWith('Starting verifyAuthChallenge...');
+    expect(logger.info).toHaveBeenCalledWith(
+      '🏁 Evento iniciado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
     expect(logger.info).toHaveBeenCalledWith('responseAnswer === expectedAnswer', {
       expectedAnswer: '123456',
       responseAnswer: '000000',

@@ -3,10 +3,11 @@ import { handler } from '../src/index';
 import {
   createAuthChallenge,
   customEmailSender,
+  customMessageSignUp,
   defineAuthChallenge,
   postAuthentication,
   postConfirmation,
-  preAuthenticaton,
+  preAuthentication,
   preSignUp,
   preTokenGeneration,
   verifyAuthChallenge,
@@ -15,10 +16,11 @@ import {
 jest.mock('../src/triggers', () => ({
   createAuthChallenge: jest.fn(),
   customEmailSender: jest.fn(),
+  customMessageSignUp: jest.fn(),
   defineAuthChallenge: jest.fn(),
   postAuthentication: jest.fn(),
   postConfirmation: jest.fn(),
-  preAuthenticaton: jest.fn(),
+  preAuthentication: jest.fn(),
   preSignUp: jest.fn(),
   preTokenGeneration: jest.fn(),
   verifyAuthChallenge: jest.fn(),
@@ -29,11 +31,14 @@ describe('handler', () => {
   const mockedPostConfirmation = jest.mocked(postConfirmation);
   const mockedPreTokenGeneration = jest.mocked(preTokenGeneration);
   const mockedCustomEmailSender = jest.mocked(customEmailSender);
+  const mockedCustomMessageSignUp = jest.mocked(customMessageSignUp);
   const mockedPostAuthentication = jest.mocked(postAuthentication);
   const mockedCreateAuthChallenge = jest.mocked(createAuthChallenge);
   const mockedDefineAuthChallenge = jest.mocked(defineAuthChallenge);
-  const mockedPreAuthentication = jest.mocked(preAuthenticaton);
+  const mockedPreAuthentication = jest.mocked(preAuthentication);
   const mockedVerifyAuthChallenge = jest.mocked(verifyAuthChallenge);
+  const requestId = 'request-id';
+  const context = { awsRequestId: requestId };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -44,9 +49,9 @@ describe('handler', () => {
     const expected = { ok: true };
     mockedPreSignUp.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedPreSignUp).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedPreSignUp).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
@@ -55,20 +60,20 @@ describe('handler', () => {
     const expected = { ok: 'confirmed' };
     mockedPostConfirmation.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedPostConfirmation).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedPostConfirmation).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
-  it('delegates PreAuthentication_Authentication to preAuthenticaton', async () => {
+  it('delegates PreAuthentication_Authentication to preAuthentication', async () => {
     const event = { triggerSource: 'PreAuthentication_Authentication' };
     const expected = { ok: 'preauth' };
     mockedPreAuthentication.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedPreAuthentication).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedPreAuthentication).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
@@ -77,9 +82,9 @@ describe('handler', () => {
     const expected = { ok: 'postauth' };
     mockedPostAuthentication.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedPostAuthentication).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedPostAuthentication).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
@@ -88,9 +93,9 @@ describe('handler', () => {
     const expected = { ok: 'defineauth' };
     mockedDefineAuthChallenge.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedDefineAuthChallenge).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedDefineAuthChallenge).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
@@ -99,9 +104,9 @@ describe('handler', () => {
     const expected = { ok: 'createauth' };
     mockedCreateAuthChallenge.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedCreateAuthChallenge).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedCreateAuthChallenge).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
@@ -110,9 +115,20 @@ describe('handler', () => {
     const expected = { ok: 'verifyauth' };
     mockedVerifyAuthChallenge.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedVerifyAuthChallenge).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedVerifyAuthChallenge).toHaveBeenCalledWith(event, requestId, expect.anything());
+    expect(result).toBe(expected);
+  });
+
+  it('delegates CustomMessage_SignUp to customMessageSignUp and returns its result', async () => {
+    const event = { triggerSource: 'CustomMessage_SignUp' };
+    const expected = { ok: 'custom-message' };
+    mockedCustomMessageSignUp.mockResolvedValue(expected as never);
+
+    const result = await handler(event as never, context as never, jest.fn() as never);
+
+    expect(mockedCustomMessageSignUp).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
@@ -121,9 +137,9 @@ describe('handler', () => {
     const expected = { ok: 'email' };
     mockedCustomEmailSender.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedCustomEmailSender).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedCustomEmailSender).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
@@ -132,9 +148,9 @@ describe('handler', () => {
     const expected = { ok: 'email' };
     mockedCustomEmailSender.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedCustomEmailSender).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedCustomEmailSender).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
@@ -143,9 +159,9 @@ describe('handler', () => {
     const expected = { ok: 'email' };
     mockedCustomEmailSender.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedCustomEmailSender).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedCustomEmailSender).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
@@ -154,9 +170,9 @@ describe('handler', () => {
     const expected = { ok: 'token' };
     mockedPreTokenGeneration.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedPreTokenGeneration).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedPreTokenGeneration).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
@@ -165,9 +181,9 @@ describe('handler', () => {
     const expected = { ok: 'token' };
     mockedPreTokenGeneration.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedPreTokenGeneration).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedPreTokenGeneration).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
@@ -176,9 +192,9 @@ describe('handler', () => {
     const expected = { ok: 'token' };
     mockedPreTokenGeneration.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedPreTokenGeneration).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedPreTokenGeneration).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
@@ -187,109 +203,153 @@ describe('handler', () => {
     const expected = { ok: 'token' };
     mockedPreTokenGeneration.mockResolvedValue(expected as never);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, jest.fn() as never);
 
-    expect(mockedPreTokenGeneration).toHaveBeenCalledWith(event, expect.anything());
+    expect(mockedPreTokenGeneration).toHaveBeenCalledWith(event, requestId, expect.anything());
     expect(result).toBe(expected);
   });
 
-  it('returns undefined for unknown trigger sources', async () => {
+  it('calls callback with an error for unknown trigger sources', async () => {
     const event = { triggerSource: 'Unknown_Trigger' };
+    const callback = jest.fn();
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, callback as never);
 
     expect(result).toBeUndefined();
+    expect(callback).toHaveBeenCalledWith(expect.any(Error), event);
+    expect(callback.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ message: 'Evento não tratado: Unknown_Trigger' })
+    );
   });
 
-  it('swallows preSignUp errors', async () => {
+  it('calls callback when preSignUp throws', async () => {
     const event = { triggerSource: 'PreSignUp_SignUp' };
-    mockedPreSignUp.mockRejectedValue(new Error('signup error'));
+    const error = new Error('signup error');
+    const callback = jest.fn();
+    mockedPreSignUp.mockRejectedValue(error);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, callback as never);
 
     expect(result).toBeUndefined();
+    expect(callback).toHaveBeenCalledWith(error, event);
   });
 
-  it('swallows postConfirmation errors', async () => {
+  it('calls callback when postConfirmation throws', async () => {
     const event = { triggerSource: 'PostConfirmation_ConfirmSignUp' };
-    mockedPostConfirmation.mockRejectedValue(new Error('postconf error'));
+    const error = new Error('postconf error');
+    const callback = jest.fn();
+    mockedPostConfirmation.mockRejectedValue(error);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, callback as never);
 
     expect(result).toBeUndefined();
+    expect(callback).toHaveBeenCalledWith(error, event);
   });
 
-  it('swallows preAuthentication errors', async () => {
+  it('calls callback when preAuthentication throws', async () => {
     const event = { triggerSource: 'PreAuthentication_Authentication' };
-    mockedPreAuthentication.mockRejectedValue(new Error('preauth error'));
+    const error = new Error('preauth error');
+    const callback = jest.fn();
+    mockedPreAuthentication.mockRejectedValue(error);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, callback as never);
 
     expect(result).toBeUndefined();
+    expect(callback).toHaveBeenCalledWith(error, event);
   });
 
-  it('swallows postAuthentication errors', async () => {
+  it('calls callback when postAuthentication throws', async () => {
     const event = { triggerSource: 'PostAuthentication_Authentication' };
-    mockedPostAuthentication.mockRejectedValue(new Error('postauth error'));
+    const error = new Error('postauth error');
+    const callback = jest.fn();
+    mockedPostAuthentication.mockRejectedValue(error);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, callback as never);
 
     expect(result).toBeUndefined();
+    expect(callback).toHaveBeenCalledWith(error, event);
   });
 
-  it('swallows defineAuthChallenge errors', async () => {
+  it('calls callback when defineAuthChallenge throws', async () => {
     const event = { triggerSource: 'DefineAuthChallenge_Authentication' };
-    mockedDefineAuthChallenge.mockRejectedValue(new Error('defineauth error'));
+    const error = new Error('defineauth error');
+    const callback = jest.fn();
+    mockedDefineAuthChallenge.mockRejectedValue(error);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, callback as never);
 
     expect(result).toBeUndefined();
+    expect(callback).toHaveBeenCalledWith(error, event);
   });
 
-  it('swallows customEmailSender errors', async () => {
+  it('calls callback when customEmailSender throws', async () => {
     const event = { triggerSource: 'CustomEmailSender_UpdateUserAttribute' };
-    mockedCustomEmailSender.mockRejectedValue(new Error('email error'));
+    const error = new Error('email error');
+    const callback = jest.fn();
+    mockedCustomEmailSender.mockRejectedValue(error);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, callback as never);
 
     expect(result).toBeUndefined();
+    expect(callback).toHaveBeenCalledWith(error, event);
   });
 
-  it('swallows createAuthChallenge errors', async () => {
+  it('calls callback when createAuthChallenge throws', async () => {
     const event = { triggerSource: 'CreateAuthChallenge_Authentication' };
-    mockedCreateAuthChallenge.mockRejectedValue(new Error('createauth error'));
+    const error = new Error('createauth error');
+    const callback = jest.fn();
+    mockedCreateAuthChallenge.mockRejectedValue(error);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, callback as never);
 
     expect(result).toBeUndefined();
+    expect(callback).toHaveBeenCalledWith(error, event);
   });
 
-  it('swallows verifyAuthChallenge errors', async () => {
+  it('calls callback when verifyAuthChallenge throws', async () => {
     const event = { triggerSource: 'VerifyAuthChallengeResponse_Authentication' };
-    mockedVerifyAuthChallenge.mockRejectedValue(new Error('verify error'));
+    const error = new Error('verify error');
+    const callback = jest.fn();
+    mockedVerifyAuthChallenge.mockRejectedValue(error);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, callback as never);
 
     expect(result).toBeUndefined();
+    expect(callback).toHaveBeenCalledWith(error, event);
   });
 
-  it('swallows preTokenGeneration errors', async () => {
+  it('calls callback when preTokenGeneration throws', async () => {
     const event = { triggerSource: 'TokenGeneration_RefreshTokens' };
-    mockedPreTokenGeneration.mockRejectedValue(new Error('token error'));
+    const error = new Error('token error');
+    const callback = jest.fn();
+    mockedPreTokenGeneration.mockRejectedValue(error);
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, callback as never);
 
     expect(result).toBeUndefined();
+    expect(callback).toHaveBeenCalledWith(error, event);
   });
 
-  it('handles trigger_source fallback parameter', async () => {
+  it('calls callback when customMessageSignUp throws', async () => {
+    const event = { triggerSource: 'CustomMessage_SignUp' };
+    const error = new Error('custom message error');
+    const callback = jest.fn();
+    mockedCustomMessageSignUp.mockRejectedValue(error);
+
+    const result = await handler(event as never, context as never, callback as never);
+
+    expect(result).toBeUndefined();
+    expect(callback).toHaveBeenCalledWith(error, event);
+  });
+
+  it('does not use the legacy trigger_source fallback parameter', async () => {
     const event = { trigger_source: 'PreSignUp_SignUp' };
-    const expected = { ok: true };
-    mockedPreSignUp.mockResolvedValue(expected as never);
+    const callback = jest.fn();
 
-    const result = await handler(event as never, {} as never, jest.fn());
+    const result = await handler(event as never, context as never, callback as never);
 
-    expect(mockedPreSignUp).toHaveBeenCalledWith(event, expect.anything());
-    expect(result).toBe(expected);
+    expect(result).toBeUndefined();
+    expect(mockedPreSignUp).not.toHaveBeenCalled();
+    expect(callback).toHaveBeenCalledWith(expect.any(Error), event);
   });
 });
