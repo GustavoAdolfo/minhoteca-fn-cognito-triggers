@@ -163,11 +163,35 @@ jobs:
         working-directory: terraform/envs/prod
         env:
           TF_VAR_appregistry_id: ${{ vars.APPREGISTRY_ID || secrets.APPREGISTRY_ID }}
+          TF_VAR_user_pool_id: ${{ steps.target.outputs.user_pool_id }}
+          TF_VAR_user_pool_client_id: ${{ vars.USER_POOL_CLIENT_ID || secrets.USER_POOL_CLIENT_ID }}
+          TF_VAR_bucket_arquivos: ${{ VARS.BUCKET_ARQUIVOS || SECRETS.BUCKET_ARQUIVOS }}
+          TF_VAR_bucket_templates: ${{ vars.BUCKET_TEMPLATES || secrets.BUCKET_TEMPLATES }}
+          TF_VAR_logo_content_type: ${{ vars.LOGO_CONTENT_TYPE || secrets.LOGO_CONTENT_TYPE }}
+          TF_VAR_logo_img: ${{ vars.LOGO_IMG || secrets.LOGO_IMG }}
+          TF_VAR_template_email_confirmation: ${{ vars.TEMPLATE_EMAIL_CONFIRMATION || secrets.TEMPLATE_EMAIL_CONFIRMATION }}
+          TF_VAR_template_email_login: ${{ vars.TEMPLATE_EMAIL_LOGIN || secrets.TEMPLATE_EMAIL_LOGIN }}
+          TF_VAR_template_email_signup: ${{ vars.TEMPLATE_EMAIL_SIGNUP || secrets.TEMPLATE_EMAIL_SIGNUP }}
+          TF_VAR_email_about_link: ${{ vars.EMAIL_ABOUT_LINK || secrets.EMAIL_ABOUT_LINK }}
+          TF_VAR_email_privacy_policy_link: ${{ vars.EMAIL_PRIVACY_POLICY_LINK || secrets.EMAIL_PRIVACY_POLICY_LINK }}
+          TF_VAR_email_use_term: ${{ vars.EMAIL_USE_TERM || secrets.EMAIL_USE_TERM }}
         run: terraform plan -out=tfplan
 
       - name: Terraform Apply
         working-directory: terraform/envs/prod
         env:
           TF_VAR_appregistry_id: ${{ vars.APPREGISTRY_ID || secrets.APPREGISTRY_ID }}
+          TF_VAR_user_pool_id: ${{ steps.target.outputs.user_pool_id }}
+          TF_VAR_user_pool_client_id: ${{ vars.USER_POOL_CLIENT_ID || secrets.USER_POOL_CLIENT_ID }}
+          TF_VAR_bucket_arquivos: ${{ VARS.BUCKET_ARQUIVOS || SECRETS.BUCKET_ARQUIVOS }}
+          TF_VAR_bucket_templates: ${{ vars.BUCKET_TEMPLATES || secrets.BUCKET_TEMPLATES }}
+          TF_VAR_logo_content_type: ${{ vars.LOGO_CONTENT_TYPE || secrets.LOGO_CONTENT_TYPE }}
+          TF_VAR_logo_img: ${{ vars.LOGO_IMG || secrets.LOGO_IMG }}
+          TF_VAR_template_email_confirmation: ${{ vars.TEMPLATE_EMAIL_CONFIRMATION || secrets.TEMPLATE_EMAIL_CONFIRMATION }}
+          TF_VAR_template_email_login: ${{ vars.TEMPLATE_EMAIL_LOGIN || secrets.TEMPLATE_EMAIL_LOGIN }}
+          TF_VAR_template_email_signup: ${{ vars.TEMPLATE_EMAIL_SIGNUP || secrets.TEMPLATE_EMAIL_SIGNUP }}
+          TF_VAR_email_about_link: ${{ vars.EMAIL_ABOUT_LINK || secrets.EMAIL_ABOUT_LINK }}
+          TF_VAR_email_privacy_policy_link: ${{ vars.EMAIL_PRIVACY_POLICY_LINK || secrets.EMAIL_PRIVACY_POLICY_LINK }}
+          TF_VAR_email_use_term: ${{ vars.EMAIL_USE_TERM || secrets.EMAIL_USE_TERM }}
         # O auto-approve é essencial em ambientes de CI/CD pois não há interação humana
         run: terraform apply -auto-approve tfplan
