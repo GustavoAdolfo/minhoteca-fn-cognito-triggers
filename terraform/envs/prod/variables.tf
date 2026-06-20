@@ -35,7 +35,7 @@ variable "template_email_login" {
   type        = string
   description = ""
 }
-variable "+" {
+variable "template_email_signup" {
   type        = string
   description = ""
 }
