@@ -190,6 +190,7 @@ jobs:
           TF_VAR_email_about_link: ${{ vars.EMAIL_ABOUT_LINK || secrets.EMAIL_ABOUT_LINK }}
           TF_VAR_email_privacy_policy_link: ${{ vars.EMAIL_PRIVACY_POLICY_LINK || secrets.EMAIL_PRIVACY_POLICY_LINK }}
           TF_VAR_email_use_term: ${{ vars.EMAIL_USE_TERM || secrets.EMAIL_USE_TERM }}
+          TF_VAR_email_principal: ${{ vars.EMAIL_PRINCIPAL || secrets.EMAIL_PRINCIPAL }}
         run: terraform plan -out=tfplan
 
       - name: Terraform Apply
@@ -209,5 +210,6 @@ jobs:
           TF_VAR_email_about_link: ${{ vars.EMAIL_ABOUT_LINK || secrets.EMAIL_ABOUT_LINK }}
           TF_VAR_email_privacy_policy_link: ${{ vars.EMAIL_PRIVACY_POLICY_LINK || secrets.EMAIL_PRIVACY_POLICY_LINK }}
           TF_VAR_email_use_term: ${{ vars.EMAIL_USE_TERM || secrets.EMAIL_USE_TERM }}
+          TF_VAR_email_principal: ${{ vars.EMAIL_PRINCIPAL || secrets.EMAIL_PRINCIPAL }}
         # O auto-approve é essencial em ambientes de CI/CD pois não há interação humana
         run: terraform apply -auto-approve tfplan

@@ -146,3 +146,5 @@ vite.config.ts.timestamp-*
 terraform/envs/prod/.terraform.lock.hcl
 terraform/envs/prod/.terraform/providers/registry.terraform.io/hashicorp/external/2.4.0/linux_amd64/terraform-provider-external_v2.4.0_x5
 terraform/envs/prod/.terraform/providers/registry.terraform.io/hashicorp/aws/5.100.0/linux_amd64/terraform-provider-aws_v5.100.0_x5
+**/.codex
+**/.agents
