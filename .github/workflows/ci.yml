@@ -177,7 +177,8 @@ jobs:
         working-directory: terraform/envs/prod
         env:
           TF_VAR_appregistry_id: ${{ vars.APPREGISTRY_ID || secrets.APPREGISTRY_ID }}
-          TF_VAR_user_pool_id: ${{ steps.target.outputs.user_pool_id }}
+          TF_VAR_user_pool_id: ${{ vars.USER_POOL_ID || secrets.USER_POOL_ID }}
+          TF_VAR_user_pool_name: ${{ vars.USER_POOL_NAME || secrets.USER_POOL_NAME }}
           TF_VAR_user_pool_client_id: ${{ vars.USER_POOL_CLIENT_ID || secrets.USER_POOL_CLIENT_ID }}
           TF_VAR_bucket_arquivos: ${{ VARS.BUCKET_ARQUIVOS || SECRETS.BUCKET_ARQUIVOS }}
           TF_VAR_bucket_templates: ${{ vars.BUCKET_TEMPLATES || secrets.BUCKET_TEMPLATES }}
@@ -195,7 +196,8 @@ jobs:
         working-directory: terraform/envs/prod
         env:
           TF_VAR_appregistry_id: ${{ vars.APPREGISTRY_ID || secrets.APPREGISTRY_ID }}
-          TF_VAR_user_pool_id: ${{ steps.target.outputs.user_pool_id }}
+          TF_VAR_user_pool_id: ${{ vars.USER_POOL_ID || secrets.USER_POOL_ID }}
+          TF_VAR_user_pool_name: ${{ vars.USER_POOL_NAME || secrets.USER_POOL_NAME }}
           TF_VAR_user_pool_client_id: ${{ vars.USER_POOL_CLIENT_ID || secrets.USER_POOL_CLIENT_ID }}
           TF_VAR_bucket_arquivos: ${{ VARS.BUCKET_ARQUIVOS || SECRETS.BUCKET_ARQUIVOS }}
           TF_VAR_bucket_templates: ${{ vars.BUCKET_TEMPLATES || secrets.BUCKET_TEMPLATES }}
