@@ -31,11 +31,9 @@ resource "aws_lambda_function" "cognitoTriggers" {
       TEMPLATE_EMAIL_CONFIRMATION  = var.template_email_confirmation
       LOGO_IMG                     = var.logo_img
       LOGO_CONTENT_TYPE            = var.logo_content_type
-      USER_POOL_ID                 = var.user_pool_id
-      USER_POOL_NAME               = var.user_pool_name
-      CLIENT_ID_TOKEN              = var.user_pool_client_id
       KEY_ALIAS                    = aws_kms_alias.kms_sender.arn
       KEY_ARN                      = aws_kms_key.kms_sender.arn
+      EMAIL_PRINCIPAL              = var.email_principal
     }
   }
   tracing_config {

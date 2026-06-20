@@ -3,10 +3,6 @@ import { createPreSignedUrlLogo, getTemplateEmail } from '../../src/triggers/com
 import * as s3Proxy from '../../src/proxies/s3-proxy';
 
 describe('createPreSignedUrlLogo', () => {
-  const logger = {
-    error: jest.fn(),
-  };
-
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -27,13 +23,13 @@ describe('createPreSignedUrlLogo', () => {
       .spyOn(s3Proxy, 'createPreSignedUrlGet')
       .mockResolvedValue('https://signed-logo-url');
 
-    const result = await createPreSignedUrlLogo(logger as never);
+    const result = await createPreSignedUrlLogo();
 
     expect(result).toBe('https://signed-logo-url');
     expect(createPreSignedUrlSpy).toHaveBeenCalledWith('bucket-resources', 'logo.png', 'image/png');
   });
 
-  it('logs and rethrows if generating the logo URL fails', async () => {
+  it('rethrows if generating the logo URL fails', async () => {
     process.env.BUCKET_RESOURCES = 'bucket-resources';
     delete process.env.LOGO_IMG;
     delete process.env.LOGO_CONTENT_TYPE;
@@ -41,10 +37,7 @@ describe('createPreSignedUrlLogo', () => {
     const error = new Error('boom');
     jest.spyOn(s3Proxy, 'createPreSignedUrlGet').mockRejectedValue(error);
 
-    await expect(createPreSignedUrlLogo(logger as never)).rejects.toThrow('boom');
-    expect(logger.error).toHaveBeenCalledWith('Error in createPreSignedUrlLogo', {
-      error,
-    });
+    await expect(createPreSignedUrlLogo()).rejects.toThrow('boom');
   });
 
   it('uses empty defaults when logo environment values are missing', async () => {
@@ -56,7 +49,7 @@ describe('createPreSignedUrlLogo', () => {
       .spyOn(s3Proxy, 'createPreSignedUrlGet')
       .mockResolvedValue('https://signed-logo-url-defaults');
 
-    const result = await createPreSignedUrlLogo(logger as never);
+    const result = await createPreSignedUrlLogo();
 
     expect(result).toBe('https://signed-logo-url-defaults');
     expect(createPreSignedUrlSpy).toHaveBeenCalledWith('', '', '');
@@ -64,10 +57,6 @@ describe('createPreSignedUrlLogo', () => {
 });
 
 describe('getTemplateEmail', () => {
-  const logger = {
-    error: jest.fn(),
-  };
-
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -86,7 +75,7 @@ describe('getTemplateEmail', () => {
       .spyOn(s3Proxy, 'getTextFileFromS3File')
       .mockResolvedValue('template-body');
 
-    const result = await getTemplateEmail('welcome.html', logger as never);
+    const result = await getTemplateEmail('welcome.html');
 
     expect(result).toBe('template-body');
     expect(getTextFileFromS3FileSpy).toHaveBeenCalledWith('bucket-templates', 'welcome.html');
@@ -97,23 +86,18 @@ describe('getTemplateEmail', () => {
 
     jest.spyOn(s3Proxy, 'getTextFileFromS3File').mockResolvedValue('');
 
-    const result = await getTemplateEmail('welcome.html', logger as never);
+    const result = await getTemplateEmail('welcome.html');
 
     expect(result).toBeUndefined();
   });
 
-  it('logs and rethrows if reading the template fails', async () => {
+  it('rethrows if reading the template fails', async () => {
     process.env.BUCKET_TEMPLATES = 'bucket-templates';
 
     const error = new Error('template error');
     jest.spyOn(s3Proxy, 'getTextFileFromS3File').mockRejectedValue(error);
 
-    await expect(getTemplateEmail('welcome.html', logger as never)).rejects.toThrow(
-      'template error'
-    );
-    expect(logger.error).toHaveBeenCalledWith('Error in getTemplateEmail', {
-      error,
-    });
+    await expect(getTemplateEmail('welcome.html')).rejects.toThrow('template error');
   });
 
   it('uses an empty bucket name when BUCKET_TEMPLATES is missing', async () => {
@@ -123,7 +107,7 @@ describe('getTemplateEmail', () => {
       .spyOn(s3Proxy, 'getTextFileFromS3File')
       .mockResolvedValue('template-body-default-bucket');
 
-    const result = await getTemplateEmail('welcome.html', logger as never);
+    const result = await getTemplateEmail('welcome.html');
 
     expect(result).toBe('template-body-default-bucket');
     expect(getTextFileFromS3FileSpy).toHaveBeenCalledWith('', 'welcome.html');

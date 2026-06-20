@@ -4,7 +4,7 @@ import {
   AdminUpdateUserAttributesCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { PostConfirmationTriggerEvent } from 'aws-lambda';
-import { Logger } from 'winston';
+import { LogService } from '@gustavoadolfo/minhoteca-core-layer';
 import { createPreSignedUrlLogo, getTemplateEmail } from './commom';
 
 const client = new CognitoIdentityProviderClient({
@@ -13,10 +13,10 @@ const client = new CognitoIdentityProviderClient({
 
 const ses = new SES();
 
-const sendEmail = async (to: string, user: string, logger: Logger): Promise<void> => {
-  const logoUrl = await createPreSignedUrlLogo(logger);
+const sendEmail = async (to: string, user: string): Promise<void> => {
+  const logoUrl = await createPreSignedUrlLogo();
   const template = process.env.TEMPLATE_EMAIL_CONFIRMATION ?? '';
-  let emailTemplate = await getTemplateEmail(template, logger);
+  let emailTemplate = await getTemplateEmail(template);
   emailTemplate = emailTemplate?.replace(/{{NOME_USUARIO}}/g, user);
   emailTemplate = emailTemplate?.replace(/{{LOGO_URL}}/g, logoUrl ?? '#');
   emailTemplate = emailTemplate?.replace(/{{LINK_SOBRE}}/g, process.env.LINK_SOBRE ?? '#');
@@ -57,14 +57,9 @@ const sendEmail = async (to: string, user: string, logger: Logger): Promise<void
           Data: logoUrl,
           ContentType: 'image/png',
         },
-        // {
-        //   Name: "termos-de-uso.pdf",
-        //   Data: "https://minhoteca.com.br/termos-de-uso.pdf",
-        //   ContentType: "application/pdf",
-        // }
       ],
     },
-    Source: 'minhoteca@livrosviajantes.com.br',
+    Source: process.env.EMAIL_PRINCIPAL ?? '',
     ReplyToAddresses: ['no-reply@minhoteca.com.br'],
     Attachments: [
       {
@@ -74,67 +69,60 @@ const sendEmail = async (to: string, user: string, logger: Logger): Promise<void
       },
     ],
   };
-  try {
-    await ses.send(new SendEmailCommand(eParams));
-  } catch (error) {
-    logger.error('Error in seneEmail', { error });
-  }
+
+  await ses.send(new SendEmailCommand(eParams));
 };
 
 const postConfirmation = async (
   event: PostConfirmationTriggerEvent,
-  logger: Logger
+  requestId: string,
+  logger: LogService
 ): Promise<PostConfirmationTriggerEvent> => {
-  if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-    logger.info('Starting postConfirmation...');
-  }
+  const triggerSource = event.triggerSource;
+
+  logger.info('🏁 Evento iniciado', { requestId, triggerSource }, { event });
 
   if (event.request.userAttributes.email) {
     await sendEmail(
       event.request.userAttributes.email,
-      event.request.userAttributes.email.split('@')[0],
-      logger
+      event.request.userAttributes.email.split('@')[0]
     );
   }
 
   const acknowledgementDate = new Date();
 
-  try {
-    const input = {
-      UserPoolId: event.userPoolId,
-      Username: event.userName,
-      UserAttributes: [
-        {
-          Name: 'custom:newUser',
-          Value: 'true',
-        },
-        {
-          Name: 'custom:acknowledgement_date',
-          Value: acknowledgementDate.toISOString().replace('T', ' ').split('.')[0] + ' UTC',
-        },
-        {
-          Name: 'custom:acknowledgement',
-          Value: 'true',
-        },
-        {
-          Name: 'custom:acknowledgement_term',
-          Value: process.env.ACKNOWLEDGMENT_FILE_PATH ?? '',
-        },
-      ],
-      ClientMetadata: {
-        // ClientMetadataType
-        //"<keys>": "STRING_VALUE",
+  const input = {
+    UserPoolId: event.userPoolId,
+    Username: event.userName,
+    UserAttributes: [
+      {
+        Name: 'custom:newUser',
+        Value: 'true',
       },
-    };
-    const command = new AdminUpdateUserAttributesCommand(input);
-    const response = await client.send(command);
-    logger.info('AdminUpdateUserAttributesCommand', { response });
+      {
+        Name: 'custom:acknowledgement_date',
+        Value: acknowledgementDate.toISOString().replace('T', ' ').split('.')[0] + ' UTC',
+      },
+      {
+        Name: 'custom:acknowledgement',
+        Value: 'true',
+      },
+      {
+        Name: 'custom:acknowledgement_term',
+        Value: process.env.ACKNOWLEDGMENT_FILE_PATH ?? '',
+      },
+    ],
+    ClientMetadata: {
+      // ClientMetadataType
+      //"<keys>": "STRING_VALUE",
+    },
+  };
+  const command = new AdminUpdateUserAttributesCommand(input);
+  const response = await client.send(command);
 
-    // TODO: SALVAR NO DYNAMODB A DATA E O CONTEÚDO DO ACEITE DOS TERMOS DE USO PARA O USUÁRIO
-  } catch (error) {
-    logger.error('Error in postConfirmation', { error });
-    // throw error;
-  }
+  logger.info('✅ Evento finalizado', { requestId, triggerSource }, { event, response });
+
+  // TODO: SALVAR NUMA BASE A DATA E O CONTEÚDO DO ACEITE DOS TERMOS DE USO PARA O USUÁRIO
 
   return event;
 };

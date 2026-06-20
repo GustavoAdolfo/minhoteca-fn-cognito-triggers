@@ -3,18 +3,11 @@ variable "appregistry_id" {
   description = "ID da aplicação no Service Catalog App Registry"
 }
 
-variable "user_pool_name" {
+variable "email_principal" {
   type        = string
-  description = "Nome do User Pool do Cognito"
+  description = "Email principal para envio dos emails e contato nos templates"
 }
-variable "user_pool_id" {
-  type        = string
-  description = "ID do User Pool do Cognito"
-}
-variable "user_pool_client_id" {
-  type        = string
-  description = "ID do User Pool Client do Cognito"
-}
+
 variable "bucket_arquivos" {
   type        = string
   description = "Nome do bucket S3 para recursos"

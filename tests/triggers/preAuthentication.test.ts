@@ -1,7 +1,8 @@
-import { preAuthenticaton } from '../../src/triggers/preAuthentication';
+import { preAuthentication } from '../../src/triggers/preAuthentication';
 
-describe('preAuthenticaton', () => {
+describe('preAuthentication', () => {
   const originalEnv = process.env;
+  const requestId = 'request-id';
 
   beforeEach(() => {
     process.env = { ...originalEnv };
@@ -27,10 +28,19 @@ describe('preAuthenticaton', () => {
       response: {},
     };
 
-    const result = await preAuthenticaton(event as never, logger as never);
+    const result = await preAuthentication(event as never, requestId, logger as never);
 
     expect(result).toBe(event);
-    expect(logger.info).not.toHaveBeenCalled();
+    expect(logger.info).toHaveBeenCalledWith(
+      '🏁 Evento iniciado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      '✅ Evento finalizado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
     expect(logger.error).not.toHaveBeenCalled();
   });
 
@@ -50,10 +60,19 @@ describe('preAuthenticaton', () => {
       response: {},
     };
 
-    const result = await preAuthenticaton(event as never, logger as never);
+    const result = await preAuthentication(event as never, requestId, logger as never);
 
     expect(result).toBe(event);
-    expect(logger.info).toHaveBeenCalledWith('Starting preAuthenticaton...');
+    expect(logger.info).toHaveBeenCalledWith(
+      '🏁 Evento iniciado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      '✅ Evento finalizado',
+      { requestId, triggerSource: undefined },
+      { event }
+    );
     expect(logger.error).not.toHaveBeenCalled();
   });
 });

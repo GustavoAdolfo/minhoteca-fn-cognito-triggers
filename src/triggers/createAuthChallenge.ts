@@ -5,7 +5,7 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { randomUUID } from 'crypto';
 import { CreateAuthChallengeTriggerEvent } from 'aws-lambda';
-import { Logger } from 'winston';
+import { LogService } from '@gustavoadolfo/minhoteca-core-layer';
 import { createPreSignedUrlLogo, getTemplateEmail } from './commom';
 
 const ses = new SES();
@@ -14,10 +14,10 @@ const cognitoClient = new CognitoIdentityProviderClient({
   region: process.env.AWS_REGION,
 });
 
-const sendEmail = async (to: string, user: string, code: string, logger: Logger): Promise<void> => {
-  const logoUrl = await createPreSignedUrlLogo(logger);
+const sendEmail = async (to: string, user: string, code: string): Promise<void> => {
+  const logoUrl = await createPreSignedUrlLogo();
   const template = process.env.TEMPLATE_EMAIL_LOGIN ?? '';
-  let emailTemplate = await getTemplateEmail(template, logger);
+  let emailTemplate = await getTemplateEmail(template);
   emailTemplate = emailTemplate?.replace(/{{NOME_USUARIO}}/g, user);
   emailTemplate = emailTemplate?.replace(/{{LOGO_URL}}/g, logoUrl ?? '#');
   emailTemplate = emailTemplate?.replace(/{{LINK_SOBRE}}/g, process.env.LINK_SOBRE ?? '#');
@@ -77,63 +77,56 @@ const sendEmail = async (to: string, user: string, code: string, logger: Logger)
     ],
   };
 
-  try {
-    await ses.send(new SendEmailCommand(eParams));
-  } catch (error) {
-    logger.error('sedEmail', { error });
-  }
+  await ses.send(new SendEmailCommand(eParams));
 };
 
 const createAuthChallenge = async (
   event: CreateAuthChallengeTriggerEvent,
-  logger: Logger
+  requestId: string,
+  logger: LogService
 ): Promise<CreateAuthChallengeTriggerEvent> => {
-  if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-    logger.info('Starting createAuthChallenge...');
-  }
+  const triggerSource = event.triggerSource;
+
+  logger.info('🏁 Evento iniciado', { requestId, triggerSource }, { event });
 
   const command = new AdminGetUserCommand({
     UserPoolId: event.userPoolId,
     Username: event.userName,
   });
 
-  try {
-    const user = await cognitoClient.send(command);
-    if (!user) {
-      return event;
-    }
-
-    // const sub =
-    // user.UserAttributes?.filter((item) => item.Name === "sub")[0]?.Value ??
-    // "";
-    // if(sub != event.request.UserAttributes.sub) {
-    //   logger.error("Identificador inválido.");
-    //   return event;
-    // }
-
-    // event.response.publicChallengeParameters = {
-    //   securityQuestion: "token"
-    // }
-    const code = randomUUID().substring(0, 6);
-    if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
-      logger.info('code', { code });
-    }
-    if (event.request.userAttributes.email) {
-      await sendEmail(
-        event.request.userAttributes.email,
-        event.request.userAttributes.email.split('@')[0],
-        code,
-        logger
-      );
-    }
-
-    event.response.privateChallengeParameters = {
-      code,
-    };
-  } catch (error) {
-    logger.error('Error in createAuthChallenge', { error });
-    throw error;
+  const user = await cognitoClient.send(command);
+  if (!user) {
+    return event;
   }
+
+  // const sub =
+  // user.UserAttributes?.filter((item) => item.Name === "sub")[0]?.Value ??
+  // "";
+  // if(sub != event.request.UserAttributes.sub) {
+  //   logger.error("Identificador inválido.");
+  //   return event;
+  // }
+
+  // event.response.publicChallengeParameters = {
+  //   securityQuestion: "token"
+  // }
+  const code = randomUUID().substring(0, 6);
+  if (process.env['ENVIRONMENT']?.toLowerCase() === 'debug') {
+    logger.info('code', { code });
+  }
+  if (event.request.userAttributes.email) {
+    await sendEmail(
+      event.request.userAttributes.email,
+      event.request.userAttributes.email.split('@')[0],
+      code
+    );
+  }
+
+  event.response.privateChallengeParameters = {
+    code,
+  };
+
+  logger.info('✅ Evento finalizado', { requestId, triggerSource }, { event });
 
   return event;
 };

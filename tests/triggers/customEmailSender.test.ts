@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 
 describe('customEmailSender', () => {
+  const requestId = 'request-id';
   const originalEnv = process.env;
 
   const setupModule = (options?: {
@@ -108,7 +109,7 @@ describe('customEmailSender', () => {
 
   it('sends email for CustomEmailSender_SignUp trigger', async () => {
     const { customEmailSender, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_SignUp',
@@ -120,7 +121,7 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.decryptMock).toHaveBeenCalled();
@@ -132,7 +133,7 @@ describe('customEmailSender', () => {
     const { customEmailSender, mocks } = setupModule({
       decryptReject: new Error('Decrypt failed'),
     });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_SignUp',
@@ -144,7 +145,7 @@ describe('customEmailSender', () => {
       },
     };
 
-    await expect(customEmailSender(event, logger)).rejects.toThrow('Decrypt failed');
+    await expect(customEmailSender(event, requestId, logger)).rejects.toThrow('Decrypt failed');
     expect(logger.error).not.toHaveBeenCalled();
   });
 
@@ -152,7 +153,7 @@ describe('customEmailSender', () => {
     const { customEmailSender, mocks } = setupModule({
       sesReject: new Error('SES failed'),
     });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_SignUp',
@@ -164,13 +165,13 @@ describe('customEmailSender', () => {
       },
     };
 
-    await expect(customEmailSender(event, logger)).rejects.toThrow('SES failed');
+    await expect(customEmailSender(event, requestId, logger)).rejects.toThrow('SES failed');
     expect(logger.error).not.toHaveBeenCalled();
   });
 
   it('returns event for CustomEmailSender_ResendCode without sending email', async () => {
     const { customEmailSender, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_ResendCode',
@@ -182,7 +183,7 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(logger.error).not.toHaveBeenCalled();
@@ -190,7 +191,7 @@ describe('customEmailSender', () => {
 
   it('returns event for CustomEmailSender_ForgotPassword without sending email', async () => {
     const { customEmailSender, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_ForgotPassword',
@@ -202,7 +203,7 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(logger.error).not.toHaveBeenCalled();
@@ -210,7 +211,7 @@ describe('customEmailSender', () => {
 
   it('returns event for CustomEmailSender_UpdateUserAttribute without sending email', async () => {
     const { customEmailSender, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_UpdateUserAttribute',
@@ -222,7 +223,7 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(logger.error).not.toHaveBeenCalled();
@@ -230,7 +231,7 @@ describe('customEmailSender', () => {
 
   it('returns event for CustomEmailSender_VerifyUserAttribute without sending email', async () => {
     const { customEmailSender, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_VerifyUserAttribute',
@@ -242,7 +243,7 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(logger.error).not.toHaveBeenCalled();
@@ -250,7 +251,7 @@ describe('customEmailSender', () => {
 
   it('returns event for CustomEmailSender_AdminCreateUser without sending email', async () => {
     const { customEmailSender, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_AdminCreateUser',
@@ -262,7 +263,7 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(logger.error).not.toHaveBeenCalled();
@@ -270,7 +271,7 @@ describe('customEmailSender', () => {
 
   it('returns event for CustomEmailSender_AccountTakeOverNotification without sending email', async () => {
     const { customEmailSender, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_AccountTakeOverNotification',
@@ -282,7 +283,7 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(logger.error).not.toHaveBeenCalled();
@@ -291,7 +292,7 @@ describe('customEmailSender', () => {
   it('logs debug message when ENVIRONMENT is debug', async () => {
     process.env.ENVIRONMENT = 'debug';
     const { customEmailSender, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_SignUp',
@@ -303,15 +304,24 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
-    expect(logger.info).toHaveBeenCalledWith('Starting customEmailSender...');
+    expect(logger.info).toHaveBeenCalledWith(
+      '🏁 Evento iniciado',
+      { requestId, triggerSource: 'CustomEmailSender_SignUp' },
+      { event }
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      '✅ Evento finalizado',
+      { requestId, triggerSource: 'CustomEmailSender_SignUp' },
+      { event }
+    );
   });
 
   it('throws when email is missing in user attributes', async () => {
     const { customEmailSender, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_SignUp',
@@ -323,13 +333,13 @@ describe('customEmailSender', () => {
       },
     };
 
-    await expect(customEmailSender(event, logger)).rejects.toThrow();
+    await expect(customEmailSender(event, requestId, logger)).rejects.toThrow();
     expect(logger.error).not.toHaveBeenCalled();
   });
 
   it('skips decrypt when event.request.code is undefined', async () => {
     const { customEmailSender, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_SignUp',
@@ -341,7 +351,7 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.decryptMock).not.toHaveBeenCalled();
@@ -349,7 +359,7 @@ describe('customEmailSender', () => {
 
   it('uses fallback "#" when createPreSignedUrlLogo returns null', async () => {
     const { customEmailSender, mocks } = setupModule({ logoUrl: null });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_SignUp',
@@ -361,7 +371,7 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.sendMock).toHaveBeenCalledTimes(1);
@@ -370,7 +380,7 @@ describe('customEmailSender', () => {
 
   it('uses empty string when getTemplateEmail returns null', async () => {
     const { customEmailSender, mocks } = setupModule({ templateEmail: null });
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_SignUp',
@@ -382,7 +392,7 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.sendMock).toHaveBeenCalledTimes(1);
@@ -396,7 +406,7 @@ describe('customEmailSender', () => {
     process.env.TEMPLATE_EMAIL_SIGNUP = 'signup-template';
 
     const { customEmailSender, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_SignUp',
@@ -408,7 +418,7 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.sendMock).toHaveBeenCalledTimes(1);
@@ -419,7 +429,7 @@ describe('customEmailSender', () => {
     process.env.ENVIRONMENT = 'debug';
 
     const { customEmailSender, mocks } = setupModule();
-    const logger = { info: jest.fn(), error: jest.fn() };
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
     const event = {
       triggerSource: 'CustomEmailSender_SignUp',
@@ -431,11 +441,19 @@ describe('customEmailSender', () => {
       },
     };
 
-    const result = await customEmailSender(event, logger);
+    const result = await customEmailSender(event, requestId, logger);
 
     expect(result).toBe(event);
     expect(mocks.sendMock).toHaveBeenCalledTimes(1);
-    expect(logger.info).toHaveBeenCalledWith('Starting customEmailSender...');
-    expect(logger.info).toHaveBeenCalledWith('sendEmail - 2', expect.any(Object));
+    expect(logger.info).toHaveBeenCalledWith(
+      '🏁 Evento iniciado',
+      { requestId, triggerSource: 'CustomEmailSender_SignUp' },
+      { event }
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      '✅ Evento finalizado',
+      { requestId, triggerSource: 'CustomEmailSender_SignUp' },
+      { event }
+    );
   });
 });
