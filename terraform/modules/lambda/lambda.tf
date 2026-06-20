@@ -44,7 +44,7 @@ resource "aws_lambda_function" "cognitoTriggers" {
 }
 
 data "external" "cognitoTriggers_version" {
-  program = ["node", "${path.module}/../../version.mjs"]
+  program = ["node", "${abspath("${path.root}/../../version.mjs")}"]
 }
 
 resource "null_resource" "cognitoTriggers_build" {
@@ -52,13 +52,13 @@ resource "null_resource" "cognitoTriggers_build" {
     src_hash = sha256(join("", [for f in sort(fileset("${path.module}/../../src", "**/*")) : filesha256("${path.module}/../../src/${f}")]))
   }
   provisioner "local-exec" {
-    command = "cd ${path.module}/../../.. && npm install && npm run build"
+    command = "cd ${abspath("${path.root}/../../..")} && npm install && npm run build"
   }
 }
 
 data "archive_file" "cognitoTriggers_file" {
   type        = "zip"
-  source_dir  = "${path.module}/../../../dist/"
+  source_dir  = abspath("${path.root}/../../dist/")
   output_path = "cognitoTriggers.zip"
 }
 
