@@ -49,7 +49,7 @@ data "external" "cognitoTriggers_version" {
 
 resource "null_resource" "cognitoTriggers_build" {
   triggers = {
-    src_hash = sha256(join("", [for f in sort(fileset("${path.module}/../../../src", "**/*")) : filesha256("${path.module}/../../src/${f}")]))
+    src_hash = sha256(join("", [for f in sort(fileset("${path.module}/../../../src", "**/*")) : filesha256("${path.module}/../../../src/${f}")]))
   }
   provisioner "local-exec" {
     command = "cd ${abspath("${path.root}/../../..")} && npm install && npm run build"
