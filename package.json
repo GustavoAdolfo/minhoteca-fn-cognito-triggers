@@ -69,7 +69,7 @@
     "@gustavoadolfo/minhoteca-adapter-layer": "^0.1.6",
     "@gustavoadolfo/minhoteca-casos-de-uso-layer": "^0.3.0",
     "@gustavoadolfo/minhoteca-core-layer": "^1.0.15",
-    "@jest/globals": "^27.5.1",
+    "@jest/globals": "^30.4.1",
     "@smithy/types": "^4.14.4",
     "@types/aws-lambda": "^8.10.162",
     "@types/config": "^4.4.0",
