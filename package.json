@@ -91,7 +91,7 @@
     "shx": "^0.3.4",
     "ts-jest": "^29.4.11",
     "tsc-alias": "^1.8.10",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "winston": "^3.19.0"
   }
 }
