@@ -88,7 +88,7 @@
     "jest": "^30.4.2",
     "lint-staged": "^17.0.7",
     "prettier": "^3.8.4",
-    "shx": "^0.3.4",
+    "shx": "^0.4.0",
     "ts-jest": "^29.4.11",
     "tsc-alias": "^1.8.10",
     "typescript": "^5.9.3",
