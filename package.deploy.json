@@ -23,7 +23,8 @@
     "src/**/*.{ts,tsx}": ["eslint --max-warnings=0 --fix"]
   },
   "dependencies": {
-    "winston": "^3.19.0",
-    "base64-js": "^1.5.1"
+    "@aws-crypto/client-node": "^5.0.2",
+    "base64-js": "^1.5.1",
+    "winston": "^3.19.0"
   }
 }
