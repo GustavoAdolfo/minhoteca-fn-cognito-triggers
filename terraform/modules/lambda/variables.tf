@@ -11,7 +11,6 @@ variable "lambda_cognito_triggers_log_retention" {
   default = 5
 }
 variable "bucket_resources" { type = string }
-variable "bucket_templates" { type = string }
 variable "logo_content_type" { type = string }
 variable "logo_img" { type = string }
 variable "template_email_confirmation" { type = string }

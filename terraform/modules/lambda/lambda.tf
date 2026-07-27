@@ -24,7 +24,6 @@ resource "aws_lambda_function" "cognitoTriggers" {
       LINK_SOBRE                   = "www.${var.email_about_link}"
       LINK_POLITICA_DE_PRIVACIDADE = "www.${var.email_privacy_policy_link}"
       LINK_TERMO_DE_USO            = "www.${var.email_use_term}"
-      BUCKET_TEMPLATES             = var.bucket_templates
       BUCKET_RESOURCES             = var.bucket_resources
       TEMPLATE_EMAIL_LOGIN         = var.template_email_login
       TEMPLATE_EMAIL_SIGNUP        = var.template_email_signup

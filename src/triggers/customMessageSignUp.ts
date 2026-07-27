@@ -35,8 +35,8 @@ async function createPreSignedUrlLogo(): Promise<string> {
 }
 
 async function getTemplateEmail(): Promise<string | undefined> {
-  const bucketName = process.env.BUCKET_TEMPLATES ?? '';
-  const templateName = process.env.TEMPLATE_EMAIL ?? '';
+  const bucketName = process.env.BUCKET_RESOURCES ?? '';
+  const templateName = process.env.TEMPLATE_EMAIL_SIGNUP ?? '';
   const client = getS3Client();
   const command = new GetObjectCommand({
     Bucket: bucketName,
