@@ -42,5 +42,5 @@ resource "aws_kms_key_policy" "kms_sender" {
 
 resource "aws_kms_alias" "kms_sender" {
   target_key_id = aws_kms_key.kms_sender.key_id
-  name          = "alias/customEmailSender"
+  name          = "alias/kmsEmailSender"
 }
