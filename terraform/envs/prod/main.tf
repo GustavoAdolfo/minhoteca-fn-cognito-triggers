@@ -25,7 +25,6 @@ module "lambda" {
   region_name                 = local.region
   application_tags            = data.aws_servicecatalogappregistry_application.minhoteca_application.tags
   bucket_resources            = var.bucket_arquivos
-  bucket_templates            = var.bucket_templates
   logo_content_type           = var.logo_content_type
   logo_img                    = var.logo_img
   template_email_confirmation = var.template_email_confirmation

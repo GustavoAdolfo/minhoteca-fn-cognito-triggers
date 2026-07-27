@@ -180,8 +180,7 @@ jobs:
           TF_VAR_user_pool_id: ${{ vars.USER_POOL_ID || secrets.USER_POOL_ID }}
           TF_VAR_user_pool_name: ${{ vars.USER_POOL_NAME || secrets.USER_POOL_NAME }}
           TF_VAR_user_pool_client_id: ${{ vars.USER_POOL_CLIENT_ID || secrets.USER_POOL_CLIENT_ID }}
-          TF_VAR_bucket_arquivos: ${{ VARS.BUCKET_ARQUIVOS || SECRETS.BUCKET_ARQUIVOS }}
-          TF_VAR_bucket_templates: ${{ vars.BUCKET_TEMPLATES || secrets.BUCKET_TEMPLATES }}
+          TF_VAR_bucket_arquivos: ${{ vars.BUCKET_ARQUIVOS || secrets.BUCKET_ARQUIVOS }}
           TF_VAR_logo_content_type: ${{ vars.LOGO_CONTENT_TYPE || secrets.LOGO_CONTENT_TYPE }}
           TF_VAR_logo_img: ${{ vars.LOGO_IMG || secrets.LOGO_IMG }}
           TF_VAR_template_email_confirmation: ${{ vars.TEMPLATE_EMAIL_CONFIRMATION || secrets.TEMPLATE_EMAIL_CONFIRMATION }}
@@ -200,8 +199,7 @@ jobs:
           TF_VAR_user_pool_id: ${{ vars.USER_POOL_ID || secrets.USER_POOL_ID }}
           TF_VAR_user_pool_name: ${{ vars.USER_POOL_NAME || secrets.USER_POOL_NAME }}
           TF_VAR_user_pool_client_id: ${{ vars.USER_POOL_CLIENT_ID || secrets.USER_POOL_CLIENT_ID }}
-          TF_VAR_bucket_arquivos: ${{ VARS.BUCKET_ARQUIVOS || SECRETS.BUCKET_ARQUIVOS }}
-          TF_VAR_bucket_templates: ${{ vars.BUCKET_TEMPLATES || secrets.BUCKET_TEMPLATES }}
+          TF_VAR_bucket_arquivos: ${{ vars.BUCKET_ARQUIVOS || secrets.BUCKET_ARQUIVOS }}
           TF_VAR_logo_content_type: ${{ vars.LOGO_CONTENT_TYPE || secrets.LOGO_CONTENT_TYPE }}
           TF_VAR_logo_img: ${{ vars.LOGO_IMG || secrets.LOGO_IMG }}
           TF_VAR_template_email_confirmation: ${{ vars.TEMPLATE_EMAIL_CONFIRMATION || secrets.TEMPLATE_EMAIL_CONFIRMATION }}
