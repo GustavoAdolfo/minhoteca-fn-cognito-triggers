@@ -12,10 +12,6 @@ variable "bucket_arquivos" {
   type        = string
   description = "Nome do bucket S3 para recursos"
 }
-variable "bucket_templates" {
-  type        = string
-  description = ""
-}
 variable "logo_content_type" {
   type        = string
   description = ""
