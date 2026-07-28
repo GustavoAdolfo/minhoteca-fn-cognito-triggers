@@ -69,7 +69,7 @@ describe('getTemplateEmail', () => {
   });
 
   it('returns the template content when the file is available', async () => {
-    process.env.BUCKET_TEMPLATES = 'bucket-templates';
+    process.env.BUCKET_RESOURCES = 'bucket-templates';
 
     const getTextFileFromS3FileSpy = jest
       .spyOn(s3Proxy, 'getTextFileFromS3File')
@@ -82,7 +82,7 @@ describe('getTemplateEmail', () => {
   });
 
   it('returns undefined when the template content is empty', async () => {
-    process.env.BUCKET_TEMPLATES = 'bucket-templates';
+    process.env.BUCKET_RESOURCES = 'bucket-templates';
 
     jest.spyOn(s3Proxy, 'getTextFileFromS3File').mockResolvedValue('');
 
@@ -92,7 +92,7 @@ describe('getTemplateEmail', () => {
   });
 
   it('rethrows if reading the template fails', async () => {
-    process.env.BUCKET_TEMPLATES = 'bucket-templates';
+    process.env.BUCKET_RESOURCES = 'bucket-templates';
 
     const error = new Error('template error');
     jest.spyOn(s3Proxy, 'getTextFileFromS3File').mockRejectedValue(error);
@@ -100,8 +100,8 @@ describe('getTemplateEmail', () => {
     await expect(getTemplateEmail('welcome.html')).rejects.toThrow('template error');
   });
 
-  it('uses an empty bucket name when BUCKET_TEMPLATES is missing', async () => {
-    delete process.env.BUCKET_TEMPLATES;
+  it('uses an empty bucket name when BUCKET_RESOURCES is missing', async () => {
+    delete process.env.BUCKET_RESOURCES;
 
     const getTextFileFromS3FileSpy = jest
       .spyOn(s3Proxy, 'getTextFileFromS3File')

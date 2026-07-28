@@ -89,7 +89,6 @@ describe('customMessageSignUp', () => {
       BUCKET_RESOURCES: 'bucket-resources',
       LOGO_IMG: 'logo.png',
       LOGO_CONTENT_TYPE: 'image/png',
-      BUCKET_TEMPLATES: 'bucket-templates',
       TEMPLATE_EMAIL: 'signup-template.html',
       LINK_SOBRE: 'https://example.com/sobre',
       LINK_POLITICA_DE_PRIVACIDADE: 'https://example.com/privacidade',
@@ -209,7 +208,6 @@ describe('customMessageSignUp', () => {
     delete process.env.BUCKET_RESOURCES;
     delete process.env.LOGO_IMG;
     delete process.env.LOGO_CONTENT_TYPE;
-    delete process.env.BUCKET_TEMPLATES;
     delete process.env.TEMPLATE_EMAIL;
     delete process.env.LINK_SOBRE;
     delete process.env.LINK_POLITICA_DE_PRIVACIDADE;
