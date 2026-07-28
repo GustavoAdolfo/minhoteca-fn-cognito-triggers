@@ -9,7 +9,7 @@ export async function createPreSignedUrlLogo(): Promise<string | null> {
 }
 
 export async function getTemplateEmail(template: string): Promise<string | undefined> {
-  const bucketName = process.env.BUCKET_TEMPLATES ?? '';
+  const bucketName = process.env.BUCKET_RESOURCES ?? '';
   const templateData = await getTextFileFromS3File(bucketName, template);
   if (!templateData) {
     return undefined;
