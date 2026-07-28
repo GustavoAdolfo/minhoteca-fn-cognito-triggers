@@ -104,7 +104,6 @@ Antes de executar o import, confirme que o environment `prod` contém os dados d
 - `APPREGISTRY_ID`
 - `USER_POOL_CLIENT_ID`
 - `BUCKET_RESOURCES`
-- `BUCKET_TEMPLATES`
 - `LOGO_CONTENT_TYPE`
 - `LOGO_IMG`
 - `TEMPLATE_EMAIL_CONFIRMATION`
