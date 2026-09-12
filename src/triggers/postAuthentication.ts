@@ -15,19 +15,19 @@ const generatePassword = () => {
   const alphaLower = 'abcdefghijklmnopqrstuvwxyz';
   const numbers = '0123456789';
   let password = '';
-  while (password.length < 8) {
+  while (password.length < 12) {
     const char1 =
       symbols[Math.floor(Math.random() * symbols.length)] ??
       symbols[Math.floor(Math.random() * symbols.length)];
     const char2 =
-      alphaUpper[Math.floor(Math.random() * symbols.length)] ??
-      alphaUpper[Math.floor(Math.random() * symbols.length)];
+      alphaUpper[Math.floor(Math.random() * alphaUpper.length)] ??
+      alphaUpper[Math.floor(Math.random() * alphaUpper.length)];
     const char3 =
-      alphaLower[Math.floor(Math.random() * symbols.length)] ??
-      alphaLower[Math.floor(Math.random() * symbols.length)];
+      alphaLower[Math.floor(Math.random() * alphaLower.length)] ??
+      alphaLower[Math.floor(Math.random() * alphaLower.length)];
     const char4 =
-      numbers[Math.floor(Math.random() * symbols.length)] ??
-      numbers[Math.floor(Math.random() * symbols.length)];
+      numbers[Math.floor(Math.random() * numbers.length)] ??
+      numbers[Math.floor(Math.random() * numbers.length)];
     password += `${char1 ?? ''}${char2 ?? ''}${char3 ?? ''}${char4 ?? ''}`;
   }
 

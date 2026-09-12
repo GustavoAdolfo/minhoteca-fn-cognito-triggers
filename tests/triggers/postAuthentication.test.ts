@@ -213,7 +213,7 @@ describe('postAuthentication', () => {
     const password = callArgs.input.Password;
 
     expect(password).toBeDefined();
-    expect(password.length).toBeGreaterThanOrEqual(8);
+    expect(password.length).toBeGreaterThanOrEqual(12);
   });
 
   it('covers password fallback branches when random index is out of bounds', async () => {
