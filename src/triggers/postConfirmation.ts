@@ -1,4 +1,5 @@
 import { SES, SendEmailCommand } from '@aws-sdk/client-ses';
+import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import {
   CognitoIdentityProviderClient,
   AdminUpdateUserAttributesCommand,
@@ -82,13 +83,6 @@ const postConfirmation = async (
 
   logger.info('🏁 Evento iniciado', { requestId, triggerSource }, { event });
 
-  if (event.request.userAttributes.email) {
-    await sendEmail(
-      event.request.userAttributes.email,
-      event.request.userAttributes.email.split('@')[0]
-    );
-  }
-
   const acknowledgementDate = new Date();
 
   const input = {
@@ -123,6 +117,46 @@ const postConfirmation = async (
   logger.info('✅ Evento finalizado', { requestId, triggerSource }, { event, response });
 
   // TODO: SALVAR NUMA BASE A DATA E O CONTEÚDO DO ACEITE DOS TERMOS DE USO PARA O USUÁRIO
+
+  try {
+    const sqsParams = {
+      QueueUrl: process.env.SQS_REPLICA_USUARIO_URL ?? '',
+      MessageBody: JSON.stringify({
+        userId: event.userName,
+        email: event.request.userAttributes.email,
+        acknowledgementDate: acknowledgementDate.toISOString(),
+      }),
+    };
+    const sqsCommand = new SendMessageCommand(sqsParams);
+    const sqsClient = new SQSClient({ region: process.env.AWS_REGION });
+    await sqsClient.send(sqsCommand);
+  } catch (error) {
+    logger.error(
+      '❌ Falha ao enviar mensagem para a fila SQS de réplica',
+      { requestId, triggerSource },
+      error as Error
+    );
+  }
+
+  try {
+    if (event.request.userAttributes.email) {
+      logger.info(
+        '📧 Enviando email de confirmação',
+        { requestId, triggerSource },
+        { email: event.request.userAttributes.email }
+      );
+      await sendEmail(
+        event.request.userAttributes.email,
+        event.request.userAttributes.email.split('@')[0]
+      );
+    }
+  } catch (error) {
+    logger.error(
+      '❌ Falha ao enviar email de confirmação',
+      { requestId, triggerSource },
+      error as Error
+    );
+  }
 
   return event;
 };

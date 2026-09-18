@@ -13,7 +13,8 @@ resource "aws_lambda_function" "cognitoTriggers" {
   filename                       = data.archive_file.cognitoTriggers_file.output_path
   source_code_hash               = data.archive_file.cognitoTriggers_file.output_base64sha256
   layers = [
-    var.coreLayer_arn
+    var.coreLayer_arn,
+    var.adapterLayer_arn
   ]
   dead_letter_config {
     target_arn = aws_sqs_queue.cognitoTriggersDL.arn
@@ -33,6 +34,8 @@ resource "aws_lambda_function" "cognitoTriggers" {
       KEY_ALIAS                    = aws_kms_alias.kms_sender.arn
       KEY_ARN                      = aws_kms_key.kms_sender.arn
       EMAIL_PRINCIPAL              = var.email_principal
+      SQS_REPLICA_USUARIO_URL      = var.sqs_replica_usuario_url
+      SQS_REPLICA_USUARIO_ARN      = var.sqs_replica_usuario_arn
     }
   }
   tracing_config {

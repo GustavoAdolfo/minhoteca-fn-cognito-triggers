@@ -33,6 +33,9 @@ module "lambda" {
   email_about_link            = var.email_about_link
   email_privacy_policy_link   = var.email_privacy_policy_link
   email_use_term              = var.email_use_term
-  coreLayer_arn               = local.coreLayer_arn
   email_principal             = var.email_principal
+  coreLayer_arn               = local.coreLayer_arn
+  adapterLayer_arn            = local.adapterLayer_arn
+  sqs_replica_usuario_url     = local.sqs_replica_usuario_url
+  sqs_replica_usuario_arn     = local.sqs_replica_usuario_arn
 }

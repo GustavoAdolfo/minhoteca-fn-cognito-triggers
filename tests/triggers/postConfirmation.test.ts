@@ -15,6 +15,7 @@ describe('postConfirmation', () => {
     const sesSendMock = options?.sesReject
       ? jest.fn().mockRejectedValue(options.sesReject)
       : jest.fn().mockResolvedValue({});
+    const sqsSendMock = jest.fn().mockResolvedValue({});
 
     const cognitoSendMock = options?.cognitoReject
       ? jest.fn().mockRejectedValue(options.cognitoReject)
@@ -58,6 +59,15 @@ describe('postConfirmation', () => {
       })),
     }));
 
+    jest.doMock('@aws-sdk/client-sqs', () => ({
+      SQSClient: jest.fn().mockImplementation(() => ({
+        send: sqsSendMock,
+      })),
+      SendMessageCommand: jest.fn().mockImplementation((params) => ({
+        input: params,
+      })),
+    }));
+
     jest.doMock('../../src/triggers/commom', () => ({
       createPreSignedUrlLogo: createPreSignedUrlLogoMock,
       getTemplateEmail: getTemplateEmailMock,
@@ -70,6 +80,7 @@ describe('postConfirmation', () => {
       postConfirmation,
       mocks: {
         sesSendMock,
+        sqsSendMock,
         cognitoSendMock,
         createPreSignedUrlLogoMock,
         getTemplateEmailMock,
@@ -173,7 +184,7 @@ describe('postConfirmation', () => {
     expect(logger.error).not.toHaveBeenCalled();
   });
 
-  it('throws when sending the confirmation email fails', async () => {
+  it('logs when sending the confirmation email fails', async () => {
     const sesError = new Error('ses-failure');
     const { postConfirmation, mocks } = setupModule({ sesReject: sesError });
     const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
@@ -189,11 +200,16 @@ describe('postConfirmation', () => {
       response: {},
     };
 
-    await expect(postConfirmation(event, requestId, logger)).rejects.toThrow('ses-failure');
+    const result = await postConfirmation(event, requestId, logger);
 
+    expect(result).toBe(event);
     expect(mocks.sesSendMock).toHaveBeenCalledTimes(1);
-    expect(mocks.cognitoSendMock).not.toHaveBeenCalled();
-    expect(logger.error).not.toHaveBeenCalled();
+    expect(mocks.cognitoSendMock).toHaveBeenCalledTimes(1);
+    expect(logger.error).toHaveBeenCalledWith(
+      '❌ Falha ao enviar email de confirmação',
+      { requestId, triggerSource: undefined },
+      sesError
+    );
   });
 
   it('throws when Cognito update fails', async () => {

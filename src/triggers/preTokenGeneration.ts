@@ -27,16 +27,16 @@ const preTokenGeneration = async (
   const command = new ListUsersCommand(input);
   const response = await client.send(command);
 
-  let canBorrow = false;
+  let podeEmprestar = false;
   if (response.Users && response.Users.length > 0) {
-    canBorrow =
+    podeEmprestar =
       response?.Users[0]?.Attributes?.find((attr) => attr.Name === 'custom:borrowApproved')
         ?.Value === 'true';
   }
 
   event.response.claimsOverrideDetails = {
     claimsToAddOrOverride: {
-      borrowApproved: String(canBorrow),
+      borrowApproved: String(podeEmprestar),
     },
   };
 
