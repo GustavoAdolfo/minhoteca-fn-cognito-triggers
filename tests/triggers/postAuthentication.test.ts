@@ -217,7 +217,10 @@ describe('postAuthentication', () => {
   });
 
   it('covers password fallback branches when random index is out of bounds', async () => {
-    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(1);
+    const randomValues = Array.from({ length: 24 }, (_, index) => (index % 2 === 0 ? 1 : 0));
+    const randomSpy = jest
+      .spyOn(Math, 'random')
+      .mockImplementation(() => randomValues.shift() ?? 0);
     const { postAuthentication, mocks } = setupModule();
     const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
@@ -272,6 +275,33 @@ describe('postAuthentication', () => {
     expect(password).toBeDefined();
     expect(password.length).toBeGreaterThanOrEqual(8);
 
+    randomSpy.mockRestore();
+  });
+
+  it('covers an empty character after both uppercase indexes are invalid', async () => {
+    const randomValues = [0, 1, 1, 0, 0, ...Array(20).fill(0)];
+    const randomSpy = jest
+      .spyOn(Math, 'random')
+      .mockImplementation(() => randomValues.shift() ?? 0);
+    const { postAuthentication, mocks } = setupModule();
+    const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
+
+    const event = {
+      userPoolId: 'pool-id',
+      userName: 'new-user',
+      request: {
+        userAttributes: {
+          email: 'newuser@exemplo.com',
+          'custom:newUser': 'true',
+        },
+      },
+      response: {},
+    };
+
+    await postAuthentication(event, requestId, logger);
+
+    const callArgs = mocks.cognitoSendMock.mock.calls[0][0];
+    expect(callArgs.input.Password.length).toBeGreaterThanOrEqual(12);
     randomSpy.mockRestore();
   });
 });
