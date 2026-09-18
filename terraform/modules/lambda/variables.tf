@@ -43,4 +43,14 @@ variable "coreLayer_arn" {
   type = string
 }
 
+variable "adapterLayer_arn" {
+  type = string
+}
 
+variable "sqs_replica_usuario_url" {
+  type = string
+}
+
+variable "sqs_replica_usuario_arn" {
+  type = string
+}
