@@ -1,6 +1,6 @@
 {
   "name": "minhoteca-fn-cognito-triggers",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Função lambda para lidar com os gatilhos do Amazon Cognito, integrando a autenticação e autorização de usuários com a Minhoteca.",
   "main": "dist/index.js",
   "files": [
@@ -58,6 +58,7 @@
     "@aws-sdk/client-dynamodb": "^3.1068.0",
     "@aws-sdk/client-s3": "^3.1073.0",
     "@aws-sdk/client-ses": "^3.1073.0",
+    "@aws-sdk/client-sqs": "^3.1135.0",
     "@aws-sdk/lib-dynamodb": "^3.1068.0",
     "@aws-sdk/node-http-handler": "^3.374.0",
     "@aws-sdk/s3-request-presigner": "^3.1072.0",
