@@ -134,6 +134,7 @@ jobs:
     permissions:
       id-token: write # Necessário para interagir com o OIDC da AWS
       contents: read
+      packages: read
 
     steps:
       - name: Checkout do código
